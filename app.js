@@ -733,7 +733,7 @@ async function showGame(user) {
     authPanel.hidden = true;
     stopLoginMusic();
     gamePanel.hidden = false;
-    titleElement.textContent = "아르카나: 만사의 기술";
+    titleElement.textContent = "아르카나";
     editorLink.hidden = user.email?.trim().toLowerCase() !== EDITOR_ALLOWED_EMAIL;
     updateMobileGameViewport();
     output.replaceChildren();
