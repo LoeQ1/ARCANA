@@ -32,11 +32,8 @@
   "stations": {
     "dimensional_rift": {
       "name": "차원 균열",
-      "aliases": ["차원열쇠", "허공", "균열"],
+      "aliases": ["허공", "균열"],
       "location": "forest",
-      "activationItemId": "dimensional_key",
-      "activationText": "차원열쇠를 허공에 꽂아 돌리자, 눈에 보이지 않던 경계가 갈라집니다!",
-      "openingReward": { "itemId": "rift_shard", "quantity": 1 },
       "enterText": "균열 안쪽에 조각을 넣을 공간이 생겼습니다. 필요한 재료를 차례대로 담아 보세요.",
       "failureText": "차원 조각이 재료를 삼키고 아무것도 돌려주지 않았습니다. 넣은 아이템은 사라졌습니다.",
       "exitText": "차원 균열의 빛이 잦아들었습니다."

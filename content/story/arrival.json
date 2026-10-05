@@ -109,7 +109,8 @@
           "text": "마을 사람들이 발견한 검은 열쇠를 받는다",
           "conditions": [],
           "effects": [
-            { "type": "grantItem", "itemId": "dimensional_key", "quantity": 1 }
+            { "type": "grantItem", "itemId": "dimensional_key", "quantity": 1 },
+            { "type": "unlockStation", "stationId": "dimensional_rift" }
           ],
           "next": "key_received"
         }
@@ -117,7 +118,7 @@
     },
     "key_received": {
       "title": "허공을 여는 열쇠",
-      "text": "열쇠는 숲에서 보았던 빈 허공의 틈과 공명합니다. 숲에서 '차원 균열'을 입력해 열쇠를 꽂아 보세요.",
+      "text": "열쇠는 숲에서 보았던 빈 허공의 틈과 공명합니다. 이제 숲에서 '차원 균열'을 입력해 안으로 들어갈 수 있습니다.",
       "conditions": [],
       "choices": [
         {
