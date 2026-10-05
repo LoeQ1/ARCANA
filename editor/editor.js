@@ -403,6 +403,67 @@ function addField(container, labelText, name, value, { multiline = false, rows =
     container.append(label);
 }
 
+function renderStationUnlockControls(container, choice, effectsField) {
+    container.replaceChildren();
+    const stationEffects = (choice.effects || []).filter((effect) => effect.type === "unlockStation");
+    const createStationSelect = (selectedId, onChange, emptyLabel) => {
+        const select = document.createElement("select");
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = emptyLabel;
+        select.append(emptyOption);
+        for (const [id, station] of Object.entries(gameplay.stations || {})) {
+            const option = document.createElement("option");
+            option.value = id;
+            option.textContent = `${station.name || id} · ${id}`;
+            select.append(option);
+        }
+        select.value = selectedId || "";
+        select.addEventListener("change", () => {
+            let effects;
+            try {
+                effects = parseArray(effectsField.value, `선택지 '${choice.id}' 효과`);
+            } catch (error) {
+                $("#editMessage").textContent = error.message;
+                renderStationUnlockControls(container, choice, effectsField);
+                return;
+            }
+            onChange(effects, select.value);
+            choice.effects = effects;
+            effectsField.value = JSON.stringify(effects, null, 2);
+            $("#editMessage").textContent = "";
+            markDirty();
+            showValidation();
+            renderStationUnlockControls(container, choice, effectsField);
+        });
+        return select;
+    };
+
+    const label = document.createElement("label");
+    label.textContent = "스토리 선택 시 해금할 변환 장치";
+    container.append(label);
+    for (const [index, effect] of stationEffects.entries()) {
+        const row = document.createElement("div");
+        row.className = "station-unlock-effect";
+        row.append(createStationSelect(effect.stationId, (effects, stationId) => {
+            const matches = effects.filter((entry) => entry.type === "unlockStation");
+            const target = matches[index];
+            if (!target) {
+                if (stationId) effects.push({ type: "unlockStation", stationId });
+                return;
+            }
+            if (!stationId) effects.splice(effects.indexOf(target), 1);
+            else target.stationId = stationId;
+        }, "장치 해금 효과 제거"));
+        container.append(row);
+    }
+
+    const addSelect = createStationSelect("", (effects, stationId) => {
+        if (stationId) effects.push({ type: "unlockStation", stationId });
+    }, "장치 해금 효과 추가...");
+    container.append(addSelect);
+}
+
 function createChoiceCard(choice, index) {
     const card = document.createElement("section");
     card.className = "choice-card";
@@ -447,6 +508,11 @@ function createChoiceCard(choice, index) {
     card.append(nextLabel);
     addField(card, "표시 조건", "conditions", choice.conditions, { multiline: true, rows: 3, json: true });
     addField(card, "선택 효과", "effects", choice.effects, { multiline: true, rows: 4, json: true });
+    const effectsField = card.querySelector('[data-choice-field="effects"]');
+    const stationUnlockControls = document.createElement("div");
+    stationUnlockControls.className = "station-unlock-controls";
+    renderStationUnlockControls(stationUnlockControls, choice, effectsField);
+    card.append(stationUnlockControls);
     for (const effect of choice.effects || []) {
         if (effect.type !== "startQuest") continue;
         const summary = document.createElement("p");

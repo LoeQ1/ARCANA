@@ -5,18 +5,19 @@ const { test } = require("node:test");
 
 global.window = global;
 require(path.join(__dirname, "..", "game", "story-engine.js"));
+require(path.join(__dirname, "..", "game", "gameplay-engine.js"));
 require(path.join(__dirname, "..", "game-state.js"));
 
 const story = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "content", "story", "arrival.json"), "utf8"));
 const gameplay = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "content", "data", "gameplay.json"), "utf8"));
 
 function makeState() {
-    return ArcanaGameState.createDefault("테스트 모험가", story);
+    return ArcanaGameState.createDefault("테스트 모험가", story, gameplay);
 }
 
 test("시작 장면과 조건부 분기를 불러온다", () => {
     const state = makeState();
-    assert.equal(ArcanaStoryEngine.validate(story).length, 0);
+    assert.equal(ArcanaStoryEngine.validate(story, gameplay).length, 0);
     assert.equal(ArcanaStoryEngine.getCurrentNode(story, state).title, "낡은 게시판");
     ArcanaStoryEngine.choose(story, state, "read_record");
     assert.equal(state.story.currentNode, "record_read");
@@ -31,6 +32,20 @@ test("선택 효과를 적용하고 같은 선택의 보상을 중복 지급하�
     ArcanaStoryEngine.choose(story, state, "return_notice");
     ArcanaStoryEngine.choose(story, state, "read_record");
     assert.equal(state.inventory.torn_record, 1);
+});
+
+test("스토리 선택으로 차원균열을 해금하고 열쇠 소모 없이 입장한다", () => {
+    const state = makeState();
+    state.location = "forest";
+    state.flags.reported_ruins_clue = true;
+    state.story.currentNode = "quest_report";
+
+    assert.equal(ArcanaGameplayEngine.enterStation(gameplay, state, "dimensional_rift").changed, false);
+    ArcanaStoryEngine.choose(story, state, "inspect_strange_key");
+    assert.equal(state.unlockedStations.dimensional_rift, true);
+    assert.equal(state.inventory.dimensional_key, 1);
+    assert.equal(ArcanaGameplayEngine.enterStation(gameplay, state, "dimensional_rift").changed, true);
+    assert.equal(state.inventory.rift_shard, undefined);
 });
 
 test("유효하지 않은 선택을 거부한다", () => {
