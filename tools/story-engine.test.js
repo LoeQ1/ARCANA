@@ -39,12 +39,16 @@ test("스토리 선택으로 차원균열을 해금하고 열쇠 소모 없이 �
     state.location = "forest";
     state.flags.reported_ruins_clue = true;
     state.story.currentNode = "quest_report";
+    state.inventory.dimensional_key = 1;
 
     assert.equal(ArcanaGameplayEngine.enterStation(gameplay, state, "dimensional_rift").changed, false);
+    assert.equal(state.inventory.dimensional_key, 1);
+    assert.equal(state.unlockedStations.dimensional_rift, undefined);
     ArcanaStoryEngine.choose(story, state, "inspect_strange_key");
     assert.equal(state.unlockedStations.dimensional_rift, true);
-    assert.equal(state.inventory.dimensional_key, 1);
+    assert.equal(state.inventory.dimensional_key, 2);
     assert.equal(ArcanaGameplayEngine.enterStation(gameplay, state, "dimensional_rift").changed, true);
+    assert.equal(state.inventory.dimensional_key, 2);
     assert.equal(state.inventory.rift_shard, undefined);
 });
 

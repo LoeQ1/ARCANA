@@ -48,25 +48,12 @@
             return { messages: [`${station.name}은(는) ${locationName}에서만 사용할 수 있습니다.`], changed: false };
         }
         state.unlockedStations ||= {};
-        const messages = [];
         if (!isStationUnlocked(state, stationId, station)) {
-            const keyId = station.activationItemId;
-            if (!keyId || !(state.inventory[keyId] > 0)) {
-                return { messages: [`${station.name}은(는) 아직 잠겨 있습니다.`], changed: false };
-            }
-            state.inventory[keyId] -= 1;
-            state.unlockedStations[stationId] = true;
-            messages.push(station.activationText || `${station.name}이(가) 열렸습니다.`);
-            const reward = station.openingReward;
-            if (reward && data.items?.[reward.itemId]) {
-                const quantity = Number.isInteger(reward.quantity) && reward.quantity > 0 ? reward.quantity : 1;
-                for (let count = 0; count < quantity; count++) addItemToInventory(state, reward.itemId, data.items[reward.itemId]);
-                messages.push(`${data.items[reward.itemId].name} x${quantity}을(를) 꺼냈습니다.`);
-            }
+            return { messages: [`${station.name}은(는) 아직 잠겨 있습니다.`], changed: false };
         }
         state.activeStation = stationId;
         const entryText = station.enterText || `${station.name}의 안쪽 공간이 열립니다.`;
-        messages.push(entryText.replace(/필요한 개수만큼 반복하면 조합됩니다\.?/g, "필요한 개수만큼 반복해 담은 뒤 '조합'을 입력하세요."));
+        const messages = [entryText.replace(/필요한 개수만큼 반복하면 조합됩니다\.?/g, "필요한 개수만큼 반복해 담은 뒤 '조합'을 입력하세요.")];
         messages.push("재료는 자동 조합되지 않습니다. '넣기 <아이템>'으로 하나씩 담은 뒤 '조합'을 입력하세요. 잘못 넣은 재료는 '빼기 <아이템>'으로 돌려놓을 수 있습니다.");
         const stored = state.stationIngredients?.[stationId] || [];
         if (stored.length) messages.push(`장치에 넣어 둔 재료: ${describeStationIngredients(data, stored)}`);
