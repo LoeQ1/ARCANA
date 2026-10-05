@@ -1,0 +1,13 @@
+{
+  "tracks": [
+    { "id": "opening_theme", "name": "오프닝 · Echoes of Lumen", "src": "assets/audio/echoes_of_lumen-epic-background-music-595722.mp3", "type": "music", "loop": true },
+    { "id": "village_square", "name": "마을 광장 소리", "src": "assets/audio/village-square.mp3", "type": "ambience", "loop": true },
+    { "id": "nature_birds", "name": "숲의 새소리", "src": "assets/audio/nature_birds.mp3", "type": "ambience", "loop": true },
+    { "id": "soft_wind", "name": "음산한 바람", "src": "assets/audio/soft-wind.mp3", "type": "ambience", "loop": true },
+    { "id": "battle_epic", "name": "전투 음악", "src": "assets/audio/battle-epic.mp3", "type": "music", "loop": true },
+    { "id": "beast_fin_lizard", "name": "짐승 공격", "src": "assets/audio/beast-fin-lizard.mp3", "type": "sfx", "loop": false },
+    { "id": "sword_sound", "name": "검 공격", "src": "assets/audio/sword-sound.mp3", "type": "sfx", "loop": false },
+    { "id": "bow_release", "name": "활 발사", "src": "assets/audio/bow-release.mp3", "type": "sfx", "loop": false },
+    { "id": "fire_magic", "name": "화염 마법", "src": "assets/audio/fire-magic.mp3", "type": "sfx", "loop": false }
+  ]
+}

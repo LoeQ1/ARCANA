@@ -1,0 +1,133 @@
+{
+  "storyId": "arrival",
+  "version": 2,
+  "startNode": "village_notice",
+  "nodes": {
+    "village_notice": {
+      "title": "낡은 게시판",
+      "text": "초심자의 마을 게시판에 숲에서 발견된 낡은 기록에 대한 공고가 붙어 있습니다.",
+      "conditions": [],
+      "choices": [
+        {
+          "id": "read_record",
+          "text": "기록을 읽는다",
+          "conditions": [],
+          "effects": [
+            { "type": "setFlag", "key": "found_ruins_clue", "value": true },
+            { "type": "grantItem", "itemId": "torn_record", "quantity": 1 }
+          ],
+          "next": "record_read"
+        },
+        {
+          "id": "leave_record",
+          "text": "기록을 그대로 둔다",
+          "conditions": [],
+          "effects": [
+            { "type": "setFlag", "key": "record_ignored", "value": true }
+          ],
+          "next": "village_square"
+        }
+      ]
+    },
+    "record_read": {
+      "title": "희미한 단서",
+      "text": "기록에는 숲 북쪽 폐허를 가리키는 문장이 남아 있습니다.",
+      "conditions": [
+        { "type": "flagEquals", "key": "found_ruins_clue", "value": true }
+      ],
+      "choices": [
+        {
+          "id": "accept_quest",
+          "text": "폐허를 조사하기로 한다",
+          "conditions": [],
+          "effects": [
+            { "type": "startQuest", "questId": "ruins_clue" },
+            { "type": "grantXp", "amount": 5 }
+          ],
+          "next": "quest_started"
+        },
+        {
+          "id": "return_notice",
+          "text": "게시판으로 돌아간다",
+          "conditions": [],
+          "effects": [],
+          "next": "village_notice"
+        }
+      ]
+    },
+    "village_square": {
+      "title": "마을 광장",
+      "text": "당신은 기록을 남겨 두고 마을 광장으로 향합니다.",
+      "conditions": [
+        { "type": "flagEquals", "key": "record_ignored", "value": true }
+      ],
+      "choices": [
+        {
+          "id": "change_mind",
+          "text": "게시판으로 돌아가 기록을 읽는다",
+          "conditions": [],
+          "effects": [],
+          "next": "village_notice"
+        }
+      ]
+    },
+    "quest_started": {
+      "title": "새로운 의뢰",
+      "text": "폐허의 단서를 조사하는 일이 기록되었습니다. 숲의 늑대를 물리친 뒤 의뢰를 보고하세요.",
+      "conditions": [],
+      "choices": [
+        {
+          "id": "report_quest",
+          "text": "완료한 의뢰를 보고한다",
+          "conditions": [
+            { "type": "questStatus", "questId": "ruins_clue", "status": "complete" }
+          ],
+          "effects": [
+            { "type": "grantGold", "amount": 10 },
+            { "type": "setFlag", "key": "reported_ruins_clue", "value": true }
+          ],
+          "next": "quest_report"
+        },
+        {
+          "id": "review_clue",
+          "text": "기록의 단서를 다시 확인한다",
+          "conditions": [],
+          "effects": [],
+          "next": "record_read"
+        }
+      ]
+    },
+    "quest_report": {
+      "title": "의뢰 완료",
+      "text": "마을 사람들은 폐허로 향하는 숲길이 안전해졌다는 소식에 안도합니다. 보상 10 골드를 받았습니다.",
+      "conditions": [
+        { "type": "flagEquals", "key": "reported_ruins_clue", "value": true }
+      ],
+      "choices": [
+        {
+          "id": "inspect_strange_key",
+          "text": "마을 사람들이 발견한 검은 열쇠를 받는다",
+          "conditions": [],
+          "effects": [
+            { "type": "grantItem", "itemId": "dimensional_key", "quantity": 1 }
+          ],
+          "next": "key_received"
+        }
+      ]
+    },
+    "key_received": {
+      "title": "허공을 여는 열쇠",
+      "text": "열쇠는 숲에서 보았던 빈 허공의 틈과 공명합니다. 숲에서 '차원 균열'을 입력해 열쇠를 꽂아 보세요.",
+      "conditions": [],
+      "choices": [
+        {
+          "id": "return_after_key",
+          "text": "열쇠를 챙겨 의뢰 기록을 닫는다",
+          "conditions": [],
+          "effects": [],
+          "next": "quest_report"
+        }
+      ]
+    }
+  }
+}

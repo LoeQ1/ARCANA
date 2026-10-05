@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>Arcana: The Art of All Things</title>
+    <link rel="stylesheet" href="style.css?v=10">
+</head>
+
+<body>
+    <main id="game">
+        <pre id="title">Arcana: The Art of All Things</pre>
+
+        <audio id="loginMusic" src="assets/audio/echoes_of_lumen-epic-background-music-595722.mp3" loop preload="auto"></audio>
+
+        <section id="settingsPanel" aria-labelledby="settingsTitle">
+            <h1 id="settingsTitle">환경 설정</h1>
+            <p>모험을 시작하기 전에 음악과 효과음을 설정하세요.</p>
+            <label class="setting-option" for="musicEnabled">
+                <input id="musicEnabled" type="checkbox" checked>
+                모든 오디오 재생
+            </label>
+            <label class="setting-option" for="musicVolume">
+                음량
+                <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.35">
+            </label>
+            <p id="settingsMusicStatus" role="status" aria-live="polite">시작하기를 누르면 음악과 함께 로그인 화면으로 이동합니다.</p>
+            <button id="startGameButton" type="button">시작하기</button>
+        </section>
+
+        <section id="authPanel" aria-labelledby="authTitle" hidden>
+            <h1 id="authTitle">기록의 서고에 접속</h1>
+            <p id="authDescription">이메일과 비밀번호로 모험가 기록에 로그인하세요.</p>
+            <form id="authForm">
+                <label for="authEmail">이메일</label>
+                <input
+                    id="authEmail"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    autofocus
+                    required>
+
+                <div id="characterNameField" hidden>
+                    <label for="characterName">모험가 이름</label>
+                    <input
+                        id="characterName"
+                        name="characterName"
+                        type="text"
+                        maxlength="24"
+                        autocomplete="nickname">
+                </div>
+
+                <label for="authPassword">비밀번호</label>
+                <input
+                    id="authPassword"
+                    name="password"
+                    type="password"
+                    minlength="6"
+                    autocomplete="current-password"
+                    required>
+
+                <button id="authSubmit" type="submit">로그인</button>
+            </form>
+            <p id="loginMusicStatus" role="status" aria-live="polite"></p>
+            <p id="authMessage" role="status" aria-live="polite"></p>
+            <button id="resendConfirmationButton" class="text-button" type="button" hidden>
+                확인 메일 다시 보내기
+            </button>
+            <button id="authModeToggle" class="text-button" type="button">새 계정 만들기</button>
+        </section>
+
+        <section id="gamePanel" hidden aria-label="게임 터미널">
+            <div id="accountBar">
+                <a id="editorLink" class="editor-game-link" href="editor/" hidden aria-label="스토리 편집기">편집기</a>
+                <button id="signOutButton" type="button">로그아웃</button>
+            </div>
+
+            <section id="terminal" aria-label="게임 터미널">
+                <div id="output" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+                <form id="commandForm" autocomplete="off">
+                    <label id="prompt" for="commandInput">이름:</label>
+                    <input
+                        id="commandInput"
+                        name="command"
+                        type="text"
+                        placeholder="이름을 입력하고 Enter를 누르세요"
+                        aria-label="명령어 입력">
+                </form>
+            </section>
+            <p class="terminal-note">명령어를 입력한 뒤 Enter를 누르세요.</p>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+    <script src="supabase-config.js?v=2"></script>
+    <script src="game-content-store.js?v=1"></script>
+    <script src="game/story-engine.js?v=2"></script>
+    <script src="game/gameplay-engine.js?v=13"></script>
+    <script src="game-state.js?v=7"></script>
+    <script src="app.js?v=20261005-4"></script>
+</body>
+
+</html>

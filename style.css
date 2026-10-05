@@ -1,0 +1,396 @@
+:root {
+    color-scheme: dark;
+    font-family: Consolas, "Courier New", monospace;
+    background: #050805;
+    color: #9cff9c;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+#game {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+body.game-active #game {
+    position: relative;
+    padding-top: 38px;
+}
+
+body.game-active #title {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+}
+
+body.game-active #accountBar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    margin: 0;
+}
+
+#authPanel,
+#settingsPanel {
+    max-width: 440px;
+    padding: 22px;
+    border: 1px solid #387a38;
+    background: #020402;
+    box-shadow: 0 0 18px #0a2a0a;
+}
+
+#authPanel h1,
+#settingsPanel h1 {
+    margin-top: 0;
+    color: #c0ffc0;
+    font-size: 20px;
+}
+
+.setting-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 18px 0;
+}
+
+#musicEnabled {
+    accent-color: #9cff9c;
+}
+
+#musicVolume {
+    flex: 1;
+    accent-color: #9cff9c;
+}
+
+#settingsMusicStatus,
+#loginMusicStatus {
+    min-height: 1.5em;
+    color: #719471;
+    font-size: 12px;
+}
+
+#authPanel label {
+    display: block;
+    margin: 14px 0 6px;
+}
+
+#authPanel input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #387a38;
+    box-sizing: border-box;
+    background: #050805;
+    color: #9cff9c;
+    font: inherit;
+}
+
+#authPanel input:focus,
+#commandInput:focus {
+    outline: 1px solid #9cff9c;
+}
+
+#authSubmit,
+#startGameButton,
+#signOutButton,
+.text-button {
+    margin-top: 14px;
+    padding: 8px 14px;
+    border: 1px solid #387a38;
+    background: #050805;
+    color: #9cff9c;
+    font: inherit;
+    cursor: pointer;
+}
+
+#authSubmit:hover,
+#startGameButton:hover,
+#signOutButton:hover,
+.text-button:hover {
+    background: #9cff9c;
+    color: #050805;
+}
+
+.dev-tool-link {
+    display: inline-block;
+    margin: 14px 0 0 12px;
+    color: #719471;
+    font-size: 12px;
+}
+
+.dev-tool-link:hover {
+    color: #c0ffc0;
+}
+
+#authSubmit:disabled,
+#signOutButton:disabled,
+.text-button:disabled {
+    cursor: wait;
+    opacity: 0.6;
+}
+
+#authMessage {
+    min-height: 1.6em;
+    color: #c0ffc0;
+}
+
+#authMessage.error {
+    color: #ff9c9c;
+}
+
+#accountBar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+#accountBar #signOutButton {
+    margin: 0;
+}
+
+#accountBar .editor-game-link,
+#accountBar #signOutButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 32px;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.editor-game-link {
+    border: 1px solid #387a38;
+    color: #9cff9c;
+    text-decoration: none;
+}
+
+.editor-game-link:hover {
+    background: #9cff9c;
+    color: #050805;
+}
+
+#title {
+    margin: 0 0 24px;
+    color: #c0ffc0;
+    font-size: 18px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+#terminal {
+    min-height: 420px;
+    padding: 18px;
+    border: 1px solid #387a38;
+    background: #020402;
+    box-shadow: 0 0 18px #0a2a0a;
+}
+
+#output {
+    max-height: 60vh;
+    min-height: 360px;
+    overflow-y: auto;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+#output p {
+    margin: 0 0 6px;
+}
+
+#output .help-block {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-wrap: normal;
+    white-space: pre;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+#output .command-line {
+    margin-top: 14px;
+    color: #e0ffe0;
+}
+
+#commandForm {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    border-top: 1px solid #183a18;
+    padding-top: 12px;
+}
+
+#prompt {
+    flex: 0 0 auto;
+    color: #c0ffc0;
+}
+
+#commandInput {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #9cff9c;
+    font: inherit;
+    caret-color: #9cff9c;
+}
+
+#commandInput::placeholder {
+    color: #527752;
+}
+
+#gamePanel .terminal-note {
+    color: #719471;
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 16px;
+    }
+
+    #title {
+        font-size: 15px;
+    }
+
+    #terminal {
+        min-height: 70vh;
+        padding: 12px;
+    }
+
+    #output {
+        min-height: calc(70vh - 60px);
+        max-height: 70vh;
+    }
+
+    body.mobile-game-active {
+        position: fixed;
+        top: var(--game-viewport-top, 0px);
+        right: 0;
+        bottom: auto;
+        left: 0;
+        width: 100%;
+        height: var(--game-viewport-height, 100dvh);
+        min-height: 0;
+        padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    body.mobile-game-active #game {
+        position: static;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        column-gap: 10px;
+        row-gap: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-width: none;
+        margin: 0;
+        padding-top: 0;
+    }
+
+    body.mobile-game-active #title {
+        position: static;
+        grid-column: 1;
+        grid-row: 1;
+        top: auto;
+        left: auto;
+        align-self: center;
+        margin: 0 0 8px;
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    body.mobile-game-active #gamePanel {
+        display: contents;
+    }
+
+    body.mobile-game-active #accountBar {
+        position: static;
+        grid-column: 2;
+        grid-row: 1;
+        top: auto;
+        right: auto;
+        z-index: auto;
+        align-self: center;
+        min-width: 0;
+        margin: 0 0 8px;
+    }
+
+    body.mobile-game-active #accountBar .editor-game-link,
+    body.mobile-game-active #accountBar #signOutButton {
+        padding: 6px 7px;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    body.mobile-game-active #terminal {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 10px;
+    }
+
+    body.mobile-game-active #output {
+        flex: 1 1 auto;
+        width: 100%;
+        height: 0;
+        min-height: 0;
+        max-height: none;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.mobile-game-active #commandForm {
+        flex: 0 0 auto;
+        align-items: center;
+        padding: 10px 0 max(2px, env(safe-area-inset-bottom));
+    }
+
+    body.mobile-game-active #prompt {
+        max-width: 42%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    body.mobile-game-active #commandInput {
+        min-height: 32px;
+        font-size: 16px;
+    }
+
+    body.mobile-game-active .terminal-note {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        margin-top: 5px;
+    }
+
+    body.mobile-keyboard-open .terminal-note {
+        display: none;
+    }
+
+    body.mobile-keyboard-open #accountBar {
+        grid-column: 2;
+        justify-content: flex-end;
+        margin-bottom: 5px;
+    }
+}

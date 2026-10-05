@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "audio": {
+    "combatMusicId": "battle_epic",
+    "playerAttackSoundId": "sword_sound",
+    "enemyAttackSoundId": null
+  },
+  "quests": {
+    "ruins_clue": {
+      "name": "폐허의 단서",
+      "description": "숲늑대를 물리치고 폐허로 향하는 길을 확인합니다.",
+      "objective": { "type": "defeatMonster", "monsterId": "forest_wolf", "location": "forest", "required": 1 }
+    }
+  },
+  "items": {
+    "torn_record": { "name": "찢어진 기록", "description": "숲 북쪽 폐허를 가리키는 희미한 단서가 적혀 있습니다.", "type": "quest", "price": 0 },
+    "dimensional_key": { "name": "차원열쇠", "description": "허공의 균열에 꽂아 돌릴 수 있을 것 같은 검은 열쇠입니다.", "type": "quest" },
+    "rift_shard": { "name": "차원 조각", "description": "균열 너머에서 떼어낸 불안정한 조각입니다.", "type": "material" },
+    "cracked_ruby_shard": { "name": "깨진 루비 조각", "description": "붉은 빛이 희미하게 남은 루비 파편입니다.", "type": "material", "price": 4, "sellPrice": 2 },
+    "perfect_ruby": { "name": "완전한 루비", "description": "균열을 메워 하나로 복원한 루비입니다.", "type": "material", "price": 18, "sellPrice": 9 },
+    "healing_potion": { "name": "회복 물약", "description": "체력을 12 회복합니다.", "type": "consumable", "heal": 12, "price": 5, "sellPrice": 2 },
+    "forest_herb": { "name": "숲 약초", "description": "숲에서 발견한 약초입니다.", "type": "material", "aliases": ["숲약초"], "price": 2, "sellPrice": 1 },
+    "wolf_pelt": { "name": "숲늑대 가죽", "description": "숲늑대에게서 얻은 질긴 가죽입니다.", "type": "material", "aliases": ["늑대 가죽", "늑대가죽"], "price": 8, "sellPrice": 4 },
+    "iron_sword": { "name": "수련용 검", "description": "초보 모험가가 쓰기 좋은 검입니다.", "type": "weapon", "equipmentSlot": "weapon", "attack": 3, "defense": 0, "durability": 20, "price": 15, "sellPrice": 7 },
+    "awakening_sword": { "name": "각성 가능 검", "description": "차원 균열의 재료를 받아들일 수 있도록 만들어진 검입니다.", "type": "weapon", "equipmentSlot": "weapon", "upgradeable": true, "attack": 2, "defense": 0, "durability": 24, "price": 30, "sellPrice": 15 },
+    "flame_awakening_sword": { "name": "화염 각성검", "description": "완전한 루비의 힘을 품은 각성검입니다.", "type": "weapon", "equipmentSlot": "weapon", "attack": 2, "element": "화염", "elementalAttack": 3, "defense": 0, "durability": 24, "price": 0, "sellPrice": 20 },
+    "leather_armor": { "name": "가죽 갑옷", "description": "가벼운 가죽으로 만든 방어구입니다.", "type": "armor", "equipmentSlot": "armor", "attack": 0, "defense": 2, "durability": 15, "price": 20, "sellPrice": 10 }
+  },
+  "monsters": {
+    "forest_wolf": { "name": "숲늑대", "hp": 16, "attack": 3, "xp": 12, "gold": 5, "drops": [{ "itemId": "wolf_pelt", "chance": 0.35, "quantity": 1 }, { "itemId": "cracked_ruby_shard", "chance": 0.15, "quantity": 1 }], "attackSoundId": "beast_fin_lizard", "heavyAttackDamage": 12, "heavyAttackEvery": 3, "heavyAttackTell": "숲늑대가 몸을 낮추며 강하게 도약할 준비를 합니다! 다음 공격은 강공격입니다. '방어'로 피해를 크게 줄일 수 있습니다." }
+  },
+  "stations": {
+    "dimensional_rift": {
+      "name": "차원 균열",
+      "aliases": ["차원열쇠", "허공", "균열"],
+      "location": "forest",
+      "activationItemId": "dimensional_key",
+      "activationText": "차원열쇠를 허공에 꽂아 돌리자, 눈에 보이지 않던 경계가 갈라집니다!",
+      "openingReward": { "itemId": "rift_shard", "quantity": 1 },
+      "enterText": "균열 안쪽에 조각을 넣을 공간이 생겼습니다. 필요한 재료를 차례대로 담아 보세요.",
+      "failureText": "차원 조각이 재료를 삼키고 아무것도 돌려주지 않았습니다. 넣은 아이템은 사라졌습니다.",
+      "exitText": "차원 균열의 빛이 잦아들었습니다."
+    }
+  },
+  "recipes": {
+    "herbal_potion": {
+      "name": "희미한 회복 물약",
+      "stationId": "dimensional_rift",
+      "ingredients": [{ "itemId": "wolf_pelt", "quantity": 1 }, { "itemId": "forest_herb", "quantity": 1 }, { "itemId": "forest_herb", "quantity": 1 }],
+      "output": { "itemId": "healing_potion", "quantity": 1 },
+      "successText": "찢어진 기록의 글자가 빛나더니 재료가 회복 물약으로 변했습니다."
+    },
+    "ruby_repair": {
+      "name": "루비 복원",
+      "stationId": "dimensional_rift",
+      "ingredients": [{ "itemId": "cracked_ruby_shard", "quantity": 3 }],
+      "output": { "itemId": "perfect_ruby", "quantity": 1 },
+      "successText": "세 조각이 맞물려 완전한 루비가 되었습니다."
+    },
+    "flame_sword_awakening": {
+      "name": "각성검 화염 부여",
+      "stationId": "dimensional_rift",
+      "ingredients": [{ "itemId": "awakening_sword", "quantity": 1 }, { "itemId": "cracked_ruby_shard", "quantity": 3 }],
+      "output": { "itemId": "flame_awakening_sword", "quantity": 1 },
+      "successText": "각성 가능 검이 화염의 힘을 얻었습니다. 화염 공격력 +3!"
+    }
+  },
+  "locations": {
+    "village": { "name": "초심자의 마을", "description": "낡은 게시판과 작은 여관이 보입니다. 동쪽 길은 장터로, 북쪽 길은 숲으로 이어집니다.", "aliases": ["마을", "마을로", "town", "귀환", "초심자의 마을"], "exits": ["forest", "market"], "explorable": false, "encounterChance": 0, "ambientAudioId": "village_square" },
+    "forest": { "name": "숲", "description": "나무들이 햇빛을 가리고 있습니다. 멀리서 정체를 알 수 없는 울음소리가 들립니다.", "aliases": ["숲", "숲으로", "숲으로 향한다", "forest", "북쪽"], "exits": ["village"], "explorable": true, "resourceItemId": "forest_herb", "resourceDropChance": 0.5, "monsterId": "forest_wolf", "encounterChance": 0.6, "ambientAudioId": "nature_birds" },
+    "market": { "name": "장터", "description": "상인들의 목소리와 사람들의 발걸음으로 북적입니다. 안쪽 골목에 약제상과 무기상이 있습니다.", "aliases": ["장터", "장터로", "장터를 둘러본다", "시장", "market", "동쪽"], "exits": ["village", "apothecary", "weapon_shop"], "explorable": false, "encounterChance": 0, "ambientAudioId": "village_square", "shopItems": [] },
+    "apothecary": { "name": "약제상", "description": "약초와 회복 물약을 진열한 작은 약방입니다.", "aliases": ["약제상", "약제상으로", "약방", "약제사", "apothecary"], "exits": ["market"], "explorable": false, "encounterChance": 0, "ambientAudioId": "village_square", "shopItems": ["healing_potion", "forest_herb", "wolf_pelt"] },
+    "weapon_shop": { "name": "무기상", "description": "검과 방어구가 벽에 걸려 있는 무기점입니다.", "aliases": ["무기상", "무기상으로", "무기점", "대장간", "weapon shop"], "exits": ["market"], "explorable": false, "encounterChance": 0, "ambientAudioId": "village_square", "shopItems": ["iron_sword", "awakening_sword", "leather_armor"] }
+  }
+}

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+    <script src="../supabase-config.js?v=2"></script>
+    <script src="editor-auth.js?v=2"></script>
+    <title>ARCANA 스토리 편집기</title>
+    <link rel="stylesheet" href="editor.css?v=12">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">ARCANA: INCREMENTAL RISE</p>
+            <h1>스토리 편집기</h1>
+        </div>
+        <div class="toolbar">
+            <a class="return-game-link" href="../">게임으로 돌아가기</a>
+            <span id="storyFileLabel" class="file-label">불러오는 중…</span>
+            <button id="openButton" type="button">JSON 열기</button>
+            <button id="saveButton" class="primary" type="button" title="스토리와 게임 데이터를 Supabase에 저장합니다.">Supabase 저장</button>
+            <button id="validateButton" type="button">검증</button>
+            <button id="addNodeButton" type="button">+ 장면 추가</button>
+            <input id="fileInput" type="file" accept=".json,application/json" hidden>
+        </div>
+    </header>
+
+    <nav class="editor-tabs" aria-label="편집기 섹션">
+        <button class="editor-tab active" type="button" data-tab="story">스토리</button>
+        <button class="editor-tab" type="button" data-tab="world">월드 맵</button>
+        <button class="editor-tab" type="button" data-tab="monsters">몬스터 도감</button>
+        <button class="editor-tab" type="button" data-tab="items">아이템·상점</button>
+        <button class="editor-tab" type="button" data-tab="stations">변환 장치·레시피</button>
+    </nav>
+
+    <section id="validationPanel" class="validation-panel global-validation" aria-live="polite">
+        <strong id="validationTitle">스토리 파일을 불러오는 중입니다.</strong>
+        <ul id="validationList"></ul>
+    </section>
+
+    <main id="storyWorkspace" class="workspace">
+        <section class="graph-panel" aria-label="스토리 흐름도">
+            <div class="panel-heading">
+                <div>
+                    <h2>스토리 흐름</h2>
+                    <p>장면 카드를 선택하면 오른쪽에서 편집할 수 있습니다. 연결선에 마우스를 올리면 선택지 내용을 확인합니다.</p>
+                </div>
+                <span id="graphSummary" class="graph-summary"></span>
+            </div>
+            <div id="graphViewport" class="graph-viewport" tabindex="0" aria-label="장면 그래프 캔버스">
+                <div id="graphCanvas" class="graph-canvas">
+                    <svg id="graphLinks" class="graph-links" aria-hidden="true"></svg>
+                    <div id="graphNodes" class="graph-nodes"></div>
+                </div>
+            </div>
+        </section>
+
+        <aside id="inspector" class="inspector" aria-label="선택한 장면 편집">
+            <div class="panel-heading inspector-heading">
+                <div>
+                    <h2 id="inspectorTitle">장면 선택</h2>
+                    <p id="inspectorSubtitle">흐름도에서 장면을 선택하세요.</p>
+                </div>
+                <button id="deleteNodeButton" class="danger" type="button" disabled>장면 삭제</button>
+            </div>
+            <section class="story-meta" aria-label="스토리 설정">
+                <h3>스토리 설정</h3>
+                <label>스토리 ID <input id="storyId" type="text"></label>
+                <div class="meta-row">
+                    <label>버전 <input id="storyVersion" type="number" min="1" step="1"></label>
+                    <label>시작 장면 <select id="storyStartNode"></select></label>
+                </div>
+                <p id="storyMetaMessage" class="edit-message" aria-live="polite"></p>
+                <div id="questTriggerList" class="quest-trigger-list"></div>
+            </section>
+            <div id="emptyInspector" class="empty-inspector">왼쪽 흐름도에서 장면 카드를 누르면 내용을 편집할 수 있습니다.</div>
+            <form id="nodeForm" hidden>
+                <label>장면 ID <input id="nodeId" type="text" readonly></label>
+                <label>제목 <input id="nodeTitle" type="text" maxlength="100"></label>
+                <label>본문 <textarea id="nodeText" rows="5"></textarea></label>
+                <label>장면 표시 조건 <small>JSON 배열</small><textarea id="nodeConditions" class="code-field" rows="3" spellcheck="false"></textarea></label>
+                <div class="choice-heading">
+                    <div><h3>선택지</h3><p>선택지를 고르면 효과가 적용되고 다음 장면으로 이동합니다.</p></div>
+                    <button id="addChoiceButton" type="button">+ 선택지</button>
+                </div>
+                <div id="choicesEditor" class="choices-editor"></div>
+                <p id="editMessage" class="edit-message" aria-live="polite"></p>
+            </form>
+        </aside>
+    </main>
+
+    <main id="worldWorkspace" class="world-workspace" hidden>
+        <section class="world-map-panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>월드 맵</h2>
+                    <p>지역 카드를 선택해 이름, 이동 출구, 탐험과 조우 설정을 편집하세요. 연결은 한쪽 방향만 설정할 수도 있습니다.</p>
+                </div>
+                <button id="addLocationButton" type="button">+ 지역 추가</button>
+            </div>
+            <div id="worldGraphViewport" class="graph-viewport world-viewport" tabindex="0" aria-label="월드 지역 지도">
+                <div id="worldGraphCanvas" class="graph-canvas world-canvas">
+                    <svg id="worldGraphLinks" class="graph-links" aria-hidden="true"></svg>
+                    <div id="worldGraphNodes" class="graph-nodes"></div>
+                </div>
+            </div>
+            <p id="worldEditMessage" class="edit-message" aria-live="polite"></p>
+        </section>
+        <aside class="inspector world-inspector" aria-label="선택한 지역 편집">
+            <section class="story-meta" aria-label="전투 오디오 설정">
+                <h3>전투 오디오</h3>
+                <label>전투 음악 <select id="combatMusicSelect"></select></label>
+                <button class="audio-preview" type="button" data-preview-select="combatMusicSelect">미리듣기</button>
+                <label>플레이어 기본 공격 효과음 <select id="playerAttackSoundSelect"></select></label>
+                <button class="audio-preview" type="button" data-preview-select="playerAttackSoundSelect">미리듣기</button>
+                <label>몬스터 기본 공격 효과음 <select id="enemyAttackSoundSelect"></select></label>
+                <button class="audio-preview" type="button" data-preview-select="enemyAttackSoundSelect">미리듣기</button>
+                <p class="audio-note">몬스터별 공격 효과음은 몬스터 도감에서 따로 지정할 수 있습니다.</p>
+            </section>
+            <div class="panel-heading inspector-heading">
+                <div><h2 id="locationInspectorTitle">지역 선택</h2><p id="locationInspectorSubtitle">지도에서 지역을 선택하세요.</p></div>
+                <button id="deleteLocationButton" class="danger" type="button" disabled>지역 삭제</button>
+            </div>
+            <div id="locationInspectorEmpty" class="empty-inspector">월드 맵에서 지역 카드를 선택하세요.</div>
+            <form id="locationForm" hidden>
+                <label>지역 ID <input id="locationId" type="text" readonly></label>
+                <label>표시 이름 <input id="locationName" type="text"></label>
+                <label>설명 <textarea id="locationDescription" rows="4"></textarea></label>
+                <label>명령어 별칭 <small>쉼표로 구분</small><input id="locationAliases" type="text" placeholder="예: 폐허, 유적"></label>
+                <label>지역 배경음 <select id="locationAmbientAudio"></select></label>
+                <button class="audio-preview" type="button" data-preview-select="locationAmbientAudio">미리듣기</button>
+                <fieldset class="exit-fieldset"><legend>탐험 아이템 보상</legend>
+                    <label>발견 아이템 <select id="locationResourceItem"></select></label>
+                    <label>아이템 발견 확률 <span id="resourceDropChanceLabel"></span><input id="locationResourceDropChance" type="range" min="0" max="1" step="0.05"></label>
+                    <small>몬스터 조우가 없을 때 판정합니다. 아이템을 찾지 못하면 골드를 발견합니다.</small>
+                </fieldset>
+                <fieldset class="exit-fieldset"><legend>이 장소에서 거래할 상품</legend><div id="locationShopItems" class="exit-options"></div></fieldset>
+                <fieldset class="exit-fieldset"><legend>이동 가능한 다음 지역</legend><div id="locationExits" class="exit-options"></div></fieldset>
+                <label class="inline-setting"><input id="locationExplorable" type="checkbox"> 이 지역에서 탐험 허용</label>
+                <label>조우 몬스터 <select id="locationMonster"></select></label>
+                <label>조우 확률 <span id="encounterChanceLabel"></span><input id="locationEncounterChance" type="range" min="0" max="1" step="0.05"></label>
+                <p id="locationEditMessage" class="edit-message" aria-live="polite"></p>
+            </form>
+        </aside>
+    </main>
+
+    <main id="monsterWorkspace" class="monster-workspace" hidden>
+        <aside class="monster-list-panel">
+            <div class="panel-heading"><div><h2>몬스터 도감</h2><p>지역 조우와 퀘스트 목표에서 사용하는 몬스터입니다.</p></div><button id="addMonsterButton" type="button">+ 몬스터</button></div>
+            <div id="monsterList" class="monster-list"></div>
+        </aside>
+        <section class="monster-detail-panel inspector">
+            <div class="panel-heading inspector-heading"><div><h2 id="monsterInspectorTitle">몬스터 선택</h2><p id="monsterInspectorSubtitle">목록에서 몬스터를 선택하세요.</p></div><button id="deleteMonsterButton" class="danger" type="button" disabled>몬스터 삭제</button></div>
+            <div id="monsterInspectorEmpty" class="empty-inspector">몬스터 목록에서 카드를 선택하세요.</div>
+            <form id="monsterForm" hidden>
+                <label>몬스터 ID <input id="monsterId" type="text" readonly></label>
+                <label>표시 이름 <input id="monsterName" type="text"></label>
+                <label>체력 <input id="monsterHp" type="number" min="1" step="1"></label>
+                <label>공격력 <input id="monsterAttack" type="number" min="0" step="1"></label>
+                <label>공격 효과음 <select id="monsterAttackSound"></select></label>
+                <button class="audio-preview" type="button" data-preview-select="monsterAttackSound">미리듣기</button>
+                <label>강공격 피해 <small>0이면 강공격을 사용하지 않습니다.</small><input id="monsterHeavyAttackDamage" type="number" min="0" step="1"></label>
+                <label>강공격 간격 <small>몬스터 공격 횟수 기준, 2 이상</small><input id="monsterHeavyAttackEvery" type="number" min="2" step="1"></label>
+                <label>강공격 예고 문구 <textarea id="monsterHeavyAttackTell" rows="3"></textarea></label>
+                <label>경험치 보상 <input id="monsterXp" type="number" min="0" step="1"></label>
+                <label>골드 보상 <input id="monsterGold" type="number" min="0" step="1"></label>
+                <fieldset class="exit-fieldset"><legend>아이템 드롭</legend>
+                    <small>몬스터를 처치하면 아래 각 항목을 설정한 확률로 따로 판정합니다.</small>
+                    <div id="monsterDrops" class="monster-drops"></div>
+                    <button id="addMonsterDropButton" type="button">+ 드롭 아이템</button>
+                </fieldset>
+                <p id="monsterEditMessage" class="edit-message" aria-live="polite"></p>
+            </form>
+        </section>
+    </main>
+
+    <main id="itemWorkspace" class="monster-workspace" hidden>
+        <aside class="monster-list-panel">
+            <div class="panel-heading"><div><h2>아이템 도감</h2><p>아이템 능력치와 가격을 편집하고 각 상점의 재고로 지정합니다.</p></div><button id="addItemButton" type="button">+ 아이템</button></div>
+            <div id="itemList" class="monster-list"></div>
+        </aside>
+        <section class="monster-detail-panel inspector">
+            <div class="panel-heading inspector-heading"><div><h2 id="itemInspectorTitle">아이템 선택</h2><p id="itemInspectorSubtitle">목록에서 아이템을 선택하세요.</p></div><button id="deleteItemButton" class="danger" type="button" disabled>아이템 삭제</button></div>
+            <div id="itemInspectorEmpty" class="empty-inspector">아이템 도감에서 항목을 선택하거나 새 아이템을 추가하세요.</div>
+            <form id="itemForm" hidden>
+                <label>아이템 ID <input id="itemId" type="text" readonly></label>
+                <label>표시 이름 <input id="itemName" type="text"></label>
+                <label>종류 <select id="itemType"><option value="consumable">소모품</option><option value="weapon">무기</option><option value="armor">방어구</option><option value="material">재료</option><option value="quest">퀘스트 아이템</option></select></label>
+                <label>설명 <textarea id="itemDescription" rows="3"></textarea></label>
+                <label>명령어 별칭 <small>쉼표로 구분</small><input id="itemAliases" type="text" placeholder="예: 포션, 회복약"></label>
+                <label>구매 가격 <small>비워두면 상점에서 구매할 수 없습니다.</small><input id="itemPrice" type="number" min="0" step="1"></label>
+                <label>판매 가격 <small>비워두면 구매 가격의 절반으로 판매합니다. 0이면 판매 불가.</small><input id="itemSellPrice" type="number" min="0" step="1"></label>
+                <label>장착 부위 <select id="itemEquipmentSlot"><option value="">장착 불가</option><option value="weapon">무기</option><option value="armor">방어구</option></select></label>
+                <label class="inline-setting"><input id="itemUpgradeable" type="checkbox"> 변환 장치에서 1회 강화 가능</label>
+                <label>회복량 <input id="itemHeal" type="number" min="0" step="1"></label>
+                <label>공격력 <input id="itemAttack" type="number" min="0" step="1"></label>
+                <label>속성 이름 <small>예: 화염, 빙결, 암흑</small><input id="itemElement" type="text"></label>
+                <label>속성 공격력 <input id="itemElementalAttack" type="number" min="0" step="1"></label>
+                <label>방어력 <input id="itemDefense" type="number" min="0" step="1"></label>
+                <label>내구도 <small>0이면 내구도가 닳지 않습니다.</small><input id="itemDurability" type="number" min="0" step="1"></label>
+            </form>
+        </section>
+    </main>
+
+    <main id="stationWorkspace" class="monster-workspace" hidden>
+        <aside class="monster-list-panel">
+            <div class="panel-heading"><div><h2>변환 장치</h2><p>해금 아이템과 스토리 효과로 열리는 장치를 구성합니다.</p></div><button id="addStationButton" type="button">+ 장치</button></div>
+            <div id="stationList" class="monster-list"></div>
+        </aside>
+        <section class="monster-detail-panel inspector station-detail-panel">
+            <div class="panel-heading inspector-heading"><div><h2 id="stationInspectorTitle">장치 선택</h2><p id="stationInspectorSubtitle">목록에서 장치를 선택하세요.</p></div><button id="deleteStationButton" class="danger" type="button" disabled>장치 삭제</button></div>
+            <div id="stationInspectorEmpty" class="empty-inspector">장치를 추가하거나 목록에서 선택하세요.</div>
+            <div id="stationEditor" hidden>
+                <label>장치 ID <input id="stationId" type="text" readonly></label>
+                <label>표시 이름 / 입력할 명령어 <input id="stationName" type="text"></label>
+                <label>명령어 별칭 <small>쉼표로 구분</small><input id="stationAliases" type="text" placeholder="예: 차원열쇠, 허공"></label>
+                <label>사용 가능 장소 <select id="stationLocation"></select></label>
+                <label>열쇠 아이템 <small>선택하면 처음 사용할 때 소모해 장치를 엽니다.</small><select id="stationActivationItem"></select></label>
+                <label>첫 개방 보상 <select id="stationOpeningReward"></select></label>
+                <label>첫 개방 보상 수량 <input id="stationOpeningRewardQuantity" type="number" min="1" step="1"></label>
+                <label class="inline-setting"><input id="stationUnlockedByDefault" type="checkbox"> 새 기록부터 기본 해금</label>
+                <label>개방 연출 문구 <textarea id="stationActivationText" rows="2"></textarea></label>
+                <label>입장 문구 <textarea id="stationEnterText" rows="3"></textarea></label>
+                <label>레시피가 없을 때 문구 <textarea id="stationFailureText" rows="2"></textarea></label>
+                <label>퇴장 문구 <input id="stationExitText" type="text"></label>
+                <fieldset class="exit-fieldset"><legend>레시피 도감</legend>
+                    <div class="panel-heading"><small>게임에서는 재료를 하나씩 넣고, '조합'을 입력했을 때 레시피를 판정합니다.</small><button id="addRecipeButton" type="button">+ 레시피</button></div>
+                    <div id="stationRecipeList" class="monster-list"></div>
+                    <p id="recipeInspectorEmpty" class="empty-inspector">레시피를 선택하거나 추가하세요.</p>
+                    <div id="recipeEditor" hidden>
+                        <div class="panel-heading"><strong id="recipeInspectorTitle">레시피 설정</strong><button id="deleteRecipeButton" class="danger" type="button">삭제</button></div>
+                        <label>레시피 ID <input id="recipeId" type="text" readonly></label>
+                        <label>이름 <input id="recipeName" type="text"></label>
+                        <label class="inline-setting"><input id="recipeDiscoveredByDefault" type="checkbox"> 처음부터 레시피 도감에 표시</label>
+                        <div class="recipe-section-heading"><strong>필요 재료</strong><button id="addIngredientButton" type="button">+ 재료</button></div>
+                        <div id="recipeIngredients" class="recipe-rows"></div>
+                        <label>결과 방식 <select id="recipeOutputMode"><option value="fixed">고정 결과</option><option value="random">확률 결과</option></select></label>
+                        <div id="fixedRecipeOutput">
+                            <label>결과 아이템 <select id="recipeOutputItem"></select></label>
+                            <label>결과 수량 <input id="recipeOutputQuantity" type="number" min="1" step="1"></label>
+                        </div>
+                        <div id="randomRecipeOutput" hidden>
+                            <div class="recipe-section-heading"><strong>무작위 결과</strong><button id="addOutcomeButton" type="button">+ 결과</button></div>
+                            <div id="recipeOutcomes" class="recipe-rows"></div>
+                            <small>가중치 비율로 결과를 뽑습니다. 예: 1, 2, 1은 25%, 50%, 25%입니다.</small>
+                        </div>
+                        <label>성공 문구 <textarea id="recipeSuccessText" rows="2"></textarea></label>
+                    </div>
+                </fieldset>
+            </div>
+        </section>
+    </main>
+
+    <script src="../game-content-store.js?v=1"></script>
+    <script src="../game/story-engine.js?v=2"></script>
+    <script src="editor.js?v=21"></script>
+</body>
+</html>
