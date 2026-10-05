@@ -139,7 +139,6 @@ function showHelp() {
     ];
     const availableStations = Object.entries(gameplayContent?.stations || {}).filter(([id, station]) =>
         station.unlockedByDefault === true || playerState?.unlockedStations?.[id] === true
-        || (station.activationItemId && playerState?.inventory?.[station.activationItemId] > 0)
     );
     if (availableStations.length) {
         help.push("", "[변환 장치]");
@@ -793,7 +792,7 @@ function showLogin() {
     activeUserId = null;
     stopGameMusic();
     gamePanel.hidden = true;
-    titleElement.textContent = "Arcana: The Art of All Things";
+    titleElement.textContent = "ARCANA";
     editorLink.hidden = true;
     updateMobileGameViewport();
     authPanel.hidden = false;
@@ -801,6 +800,7 @@ function showLogin() {
     playerState = null;
     saveRevision = 0;
     showAuthMessage("");
+    startLoginMusic();
     document.getElementById("authEmail").focus();
 }
 
@@ -927,13 +927,19 @@ function initializeSupabase() {
 
     signOutButton.addEventListener("click", async () => {
         signOutButton.disabled = true;
+        stopGameMusic();
+        startLoginMusic();
         try {
             const { error } = await supabaseClient.auth.signOut();
             if (error) {
+                stopLoginMusic();
                 writeLine(`[오류] 로그아웃에 실패했습니다: ${error.message}`);
+                syncGameMusic();
             }
         } catch (error) {
+            stopLoginMusic();
             writeLine(`[오류] 로그아웃에 실패했습니다: ${error.message}`);
+            syncGameMusic();
         } finally {
             signOutButton.disabled = false;
         }

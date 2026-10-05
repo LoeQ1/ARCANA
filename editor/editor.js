@@ -184,9 +184,6 @@ function validateStory() {
         if (!station.name?.trim()) errors.push(`장치 '${stationId}' 표시 이름이 필요합니다.`);
         if (station.aliases !== undefined && !Array.isArray(station.aliases)) errors.push(`장치 '${stationId}' aliases는 배열이어야 합니다.`);
         if (station.location && !gameplay.locations?.[station.location]) errors.push(`장치 '${stationId}' 위치 '${station.location}'을(를) 찾을 수 없습니다.`);
-        if (station.activationItemId && !gameplay.items?.[station.activationItemId]) errors.push(`장치 '${stationId}' 해금 아이템 '${station.activationItemId}'을(를) 찾을 수 없습니다.`);
-        if (station.openingReward && !gameplay.items?.[station.openingReward.itemId]) errors.push(`장치 '${stationId}' 개방 보상 아이템 '${station.openingReward.itemId}'을(를) 찾을 수 없습니다.`);
-        if (station.openingReward && (!Number.isInteger(station.openingReward.quantity) || station.openingReward.quantity < 1)) errors.push(`장치 '${stationId}' 개방 보상 수량은 1 이상의 정수여야 합니다.`);
     }
     const stationCommands = new Map();
     const reservedStationCommands = new Set(["보기", "상태", "소지품", "이야기", "도움말", "탐험", "공격", "방어", "도망", "사용", "구매", "판매", "목록", "이동", "장착", "해제", "선택", "넣기", "레시피", "나가기"]);
@@ -1052,7 +1049,6 @@ function renderItemList() {
 
 function hasItemReferences(itemId) {
     if (Object.values(gameplay.locations || {}).some((location) => location.resourceItemId === itemId || (location.shopItems || []).includes(itemId))) return true;
-    if (Object.values(gameplay.stations || {}).some((station) => station.activationItemId === itemId || station.openingReward?.itemId === itemId)) return true;
     if (Object.values(gameplay.recipes || {}).some((recipe) =>
         (recipe.ingredients || []).some((ingredient) => ingredient.itemId === itemId)
         || recipe.output?.itemId === itemId
@@ -1290,16 +1286,7 @@ function renderStationInspector() {
     const locationSelect = makeSelect(Object.entries(gameplay.locations || {}).map(([id, value]) => [id, `${value.name || id} · ${id}`]), station.location, "어디서나 사용 가능");
     $("#stationLocation").replaceWith(locationSelect);
     locationSelect.id = "stationLocation";
-    const itemOptions = Object.entries(gameplay.items || {}).map(([id, item]) => [id, `${item.name || id} · ${id}`]);
-    const activationSelect = makeSelect(itemOptions, station.activationItemId, "열쇠 없이 사용");
-    $("#stationActivationItem").replaceWith(activationSelect);
-    activationSelect.id = "stationActivationItem";
-    const rewardSelect = makeSelect(itemOptions, station.openingReward?.itemId, "첫 개방 보상 없음");
-    $("#stationOpeningReward").replaceWith(rewardSelect);
-    rewardSelect.id = "stationOpeningReward";
-    $("#stationOpeningRewardQuantity").value = String(station.openingReward?.quantity || 1);
     $("#stationUnlockedByDefault").checked = station.unlockedByDefault === true;
-    $("#stationActivationText").value = station.activationText || "";
     $("#stationEnterText").value = station.enterText || "";
     $("#stationFailureText").value = station.failureText || "";
     $("#stationExitText").value = station.exitText || "";
@@ -1308,20 +1295,8 @@ function renderStationInspector() {
     $("#stationName").oninput = () => { station.name = $("#stationName").value; $("#stationInspectorTitle").textContent = station.name || "장치 설정"; markGameplayDirty(); renderStationList(); };
     $("#stationAliases").oninput = () => { station.aliases = $("#stationAliases").value.split(",").map((alias) => alias.trim()).filter(Boolean); markGameplayDirty(); };
     locationSelect.onchange = () => { station.location = locationSelect.value || null; markGameplayDirty(); renderStationList(); showValidation(); };
-    activationSelect.onchange = () => { station.activationItemId = activationSelect.value || null; markGameplayDirty(); showValidation(); };
-    rewardSelect.onchange = () => {
-        if (rewardSelect.value) station.openingReward = { itemId: rewardSelect.value, quantity: Number($("#stationOpeningRewardQuantity").value) || 1 };
-        else delete station.openingReward;
-        markGameplayDirty();
-        showValidation();
-    };
-    $("#stationOpeningRewardQuantity").oninput = () => {
-        if (station.openingReward) station.openingReward.quantity = Number($("#stationOpeningRewardQuantity").value);
-        markGameplayDirty();
-        showValidation();
-    };
     $("#stationUnlockedByDefault").onchange = () => { station.unlockedByDefault = $("#stationUnlockedByDefault").checked; markGameplayDirty(); };
-    for (const [field, id] of [["activationText", "stationActivationText"], ["enterText", "stationEnterText"], ["failureText", "stationFailureText"], ["exitText", "stationExitText"]]) {
+    for (const [field, id] of [["enterText", "stationEnterText"], ["failureText", "stationFailureText"], ["exitText", "stationExitText"]]) {
         $(`#${id}`).oninput = () => { station[field] = $(`#${id}`).value; markGameplayDirty(); };
     }
 

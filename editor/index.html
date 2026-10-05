@@ -205,7 +205,7 @@
 
     <main id="stationWorkspace" class="monster-workspace" hidden>
         <aside class="monster-list-panel">
-            <div class="panel-heading"><div><h2>변환 장치</h2><p>해금 아이템과 스토리 효과로 열리는 장치를 구성합니다.</p></div><button id="addStationButton" type="button">+ 장치</button></div>
+            <div class="panel-heading"><div><h2>변환 장치</h2><p>스토리 효과 또는 기본 해금으로 사용할 장치를 구성합니다.</p></div><button id="addStationButton" type="button">+ 장치</button></div>
             <div id="stationList" class="monster-list"></div>
         </aside>
         <section class="monster-detail-panel inspector station-detail-panel">
@@ -216,11 +216,7 @@
                 <label>표시 이름 / 입력할 명령어 <input id="stationName" type="text"></label>
                 <label>명령어 별칭 <small>쉼표로 구분</small><input id="stationAliases" type="text" placeholder="예: 차원열쇠, 허공"></label>
                 <label>사용 가능 장소 <select id="stationLocation"></select></label>
-                <label>열쇠 아이템 <small>선택하면 처음 사용할 때 소모해 장치를 엽니다.</small><select id="stationActivationItem"></select></label>
-                <label>첫 개방 보상 <select id="stationOpeningReward"></select></label>
-                <label>첫 개방 보상 수량 <input id="stationOpeningRewardQuantity" type="number" min="1" step="1"></label>
                 <label class="inline-setting"><input id="stationUnlockedByDefault" type="checkbox"> 새 기록부터 기본 해금</label>
-                <label>개방 연출 문구 <textarea id="stationActivationText" rows="2"></textarea></label>
                 <label>입장 문구 <textarea id="stationEnterText" rows="3"></textarea></label>
                 <label>레시피가 없을 때 문구 <textarea id="stationFailureText" rows="2"></textarea></label>
                 <label>퇴장 문구 <input id="stationExitText" type="text"></label>
@@ -254,6 +250,6 @@
 
     <script src="../game-content-store.js?v=1"></script>
     <script src="../game/story-engine.js?v=2"></script>
-    <script src="editor.js?v=21"></script>
+    <script src="editor.js?v=22"></script>
 </body>
 </html>
