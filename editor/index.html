@@ -7,7 +7,7 @@
     <script src="../supabase-config.js?v=2"></script>
     <script src="editor-auth.js?v=2"></script>
     <title>ARCANA 스토리 편집기</title>
-    <link rel="stylesheet" href="editor.css?v=12">
+    <link rel="stylesheet" href="editor.css?v=13">
 </head>
 <body>
     <header class="topbar">
@@ -32,6 +32,7 @@
         <button class="editor-tab" type="button" data-tab="monsters">몬스터 도감</button>
         <button class="editor-tab" type="button" data-tab="items">아이템·상점</button>
         <button class="editor-tab" type="button" data-tab="stations">변환 장치·레시피</button>
+        <button class="editor-tab" type="button" data-tab="users">가입자 관리</button>
     </nav>
 
     <section id="validationPanel" class="validation-panel global-validation" aria-live="polite">
@@ -248,8 +249,20 @@
         </section>
     </main>
 
+    <section id="usersWorkspace" class="user-admin-workspace" hidden aria-labelledby="userAdminTitle">
+        <div class="panel-heading">
+            <div>
+                <h2 id="userAdminTitle">가입자 관리</h2>
+                <p>가입자에게 GM 권한을 부여하거나 회수합니다. GM은 게임에서 숨겨진 스토리 초기화 명령을 사용할 수 있습니다.</p>
+            </div>
+            <button id="reloadUsersButton" type="button">목록 새로고침</button>
+        </div>
+        <p id="userAdminMessage" role="status" aria-live="polite">가입자 목록을 불러오려면 새로고침을 누르세요.</p>
+        <div id="userAdminList" class="user-admin-list"></div>
+    </section>
+
     <script src="../game-content-store.js?v=1"></script>
     <script src="../game/story-engine.js?v=2"></script>
-    <script src="editor.js?v=22"></script>
+    <script src="editor.js?v=23"></script>
 </body>
 </html>
