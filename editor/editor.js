@@ -10,6 +10,9 @@ const worldWorkspace = $("#worldWorkspace");
 const monsterWorkspace = $("#monsterWorkspace");
 const itemWorkspace = $("#itemWorkspace");
 const stationWorkspace = $("#stationWorkspace");
+const usersWorkspace = $("#usersWorkspace");
+const userAdminList = $("#userAdminList");
+const userAdminMessage = $("#userAdminMessage");
 const inspector = $("#inspector");
 const nodeForm = $("#nodeForm");
 const choicesEditor = $("#choicesEditor");
@@ -1445,12 +1448,70 @@ function deleteRecipe() {
 }
 
 function setActiveTab(tab) {
-    const workspaces = { story: storyWorkspace, world: worldWorkspace, monsters: monsterWorkspace, items: itemWorkspace, stations: stationWorkspace };
+    const workspaces = { story: storyWorkspace, world: worldWorkspace, monsters: monsterWorkspace, items: itemWorkspace, stations: stationWorkspace, users: usersWorkspace };
     for (const [name, workspace] of Object.entries(workspaces)) {
         workspace.hidden = name !== tab;
         document.querySelector(`[data-tab="${name}"]`).classList.toggle("active", name === tab);
     }
     $("#addNodeButton").hidden = tab !== "story";
+    if (tab === "users") loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+    userAdminMessage.textContent = "가입자 목록을 불러오는 중입니다…";
+    userAdminList.replaceChildren();
+    const { data, error } = await window.ARCANA_EDITOR_CLIENT.rpc("arcana_list_users_for_editor");
+    if (error) {
+        userAdminMessage.textContent = `가입자 목록을 불러오지 못했습니다: ${error.message}. Supabase에 권한 관리 마이그레이션을 적용했는지 확인하세요.`;
+        return;
+    }
+    const users = Array.isArray(data) ? data : [];
+    if (!users.length) {
+        userAdminMessage.textContent = "등록된 가입자가 없습니다.";
+        return;
+    }
+    userAdminMessage.textContent = `가입자 ${users.length}명 · 체크하면 GM 권한을 부여하고, 해제하면 회수합니다.`;
+    for (const user of users) {
+        const card = document.createElement("article");
+        card.className = "user-admin-card";
+        const identity = document.createElement("div");
+        identity.className = "user-admin-identity";
+        const name = document.createElement("strong");
+        name.textContent = user.character_name || "이름 미설정";
+        const email = document.createElement("span");
+        email.textContent = user.email || "(이메일 비공개)";
+        const created = document.createElement("small");
+        created.textContent = user.created_at ? `가입: ${new Date(user.created_at).toLocaleDateString("ko-KR")}` : "";
+        identity.append(name, email, created);
+        const label = document.createElement("label");
+        label.className = "gm-role-toggle";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = user.is_gm === true;
+        checkbox.disabled = user.is_editor === true;
+        checkbox.setAttribute("aria-label", `${user.email || user.character_name} GM 권한`);
+        const labelText = document.createElement("span");
+        labelText.textContent = user.is_editor ? "편집자" : "GM";
+        label.append(checkbox, labelText);
+        if (!user.is_editor) {
+            checkbox.addEventListener("change", async () => {
+                checkbox.disabled = true;
+                userAdminMessage.textContent = `${user.email} 권한을 저장하는 중입니다…`;
+                const { error: updateError } = await window.ARCANA_EDITOR_CLIENT.rpc("arcana_set_user_gm", {
+                    p_user_id: user.user_id,
+                    p_is_gm: checkbox.checked
+                });
+                if (updateError) {
+                    userAdminMessage.textContent = `권한을 변경하지 못했습니다: ${updateError.message}`;
+                    await loadAdminUsers();
+                    return;
+                }
+                await loadAdminUsers();
+            });
+        }
+        card.append(identity, label);
+        userAdminList.append(card);
+    }
 }
 
 function renderStoryMeta() {
@@ -1769,6 +1830,7 @@ $("#storyId").addEventListener("input", applyStoryMeta);
 $("#storyVersion").addEventListener("input", applyStoryMeta);
 $("#storyStartNode").addEventListener("change", applyStoryMeta);
 document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => setActiveTab(button.dataset.tab)));
+$("#reloadUsersButton").addEventListener("click", loadAdminUsers);
 $("#addLocationButton").addEventListener("click", addLocation);
 $("#deleteLocationButton").addEventListener("click", deleteLocation);
 $("#addMonsterButton").addEventListener("click", addMonster);
