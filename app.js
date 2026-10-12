@@ -514,6 +514,23 @@ async function runCommand(command) {
         return;
     }
 
+    // Hidden GM-only command. Authorization and the state mutation are enforced in PostgreSQL.
+    if (normalized === "스토리초기화") {
+        const { data, error } = await supabaseClient.rpc("arcana_reset_story_progress");
+        if (error) throw new Error(error.message || "스토리 초기화 권한이 없거나 초기화에 실패했습니다.");
+        const result = Array.isArray(data) ? data[0] : data;
+        if (!result?.new_state || !Number.isFinite(Number(result.new_revision))) {
+            throw new Error("스토리 초기화 결과를 확인하지 못했습니다. 새로고침 후 다시 시도하세요.");
+        }
+        playerState = ArcanaGameState.normalize(result.new_state, player.name, storyContent, gameplayContent);
+        saveRevision = Number(result.new_revision);
+        setPrompt();
+        syncGameMusic();
+        writeLine("스토리 진행 상태를 초기화했습니다. 레벨, 경험치, 골드, 소지품, 장비는 유지됩니다.", "system");
+        renderStoryNode();
+        return { skipPersist: true };
+    }
+
     if (playerState.activeStation) {
         handleStationCommand(command, normalized);
         return;
@@ -652,7 +669,8 @@ form.addEventListener("submit", (event) => {
 
     writeLine(`${prompt.textContent} ${command}`, "command-line");
     const previousState = JSON.stringify(playerState);
-    runCommand(command).then(async () => {
+    runCommand(command).then(async (result) => {
+        if (result?.skipPersist) return;
         if (JSON.stringify(playerState) !== previousState) {
             try {
                 await persistPlayerState();
