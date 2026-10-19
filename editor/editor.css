@@ -246,3 +246,35 @@ p { margin: 0; }
     .toolbar { gap: 6px; }
     .file-label { flex-basis: 100%; }
 }
+
+
+.user-admin-workspace {
+    margin: 22px;
+    padding: 22px;
+    border: 1px solid #30333d;
+    border-radius: 12px;
+    background: #171920;
+}
+.user-admin-workspace > .panel-heading { margin-bottom: 16px; }
+.user-admin-workspace > .panel-heading p { margin-top: 5px; color: #a8adba; line-height: 1.5; }
+#userAdminMessage { margin-bottom: 12px; color: #aeb5c4; }
+.user-admin-list { display: grid; gap: 8px; }
+.user-admin-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 15px;
+    border: 1px solid #30333d;
+    border-radius: 8px;
+    background: #1d2028;
+}
+.user-admin-identity { display: grid; gap: 4px; min-width: 0; }
+.user-admin-identity span, .user-admin-identity small { color: #a8adba; overflow-wrap: anywhere; }
+.user-admin-identity strong { font-size: 14px; }
+.gm-role-toggle { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.gm-role-toggle input { width: 18px; height: 18px; accent-color: #b9e889; }
+@media (max-width: 640px) {
+    .user-admin-workspace { margin: 12px; padding: 14px; }
+    .user-admin-card { align-items: flex-start; }
+}

@@ -8,8 +8,9 @@ Apply each migration once in the existing Supabase project. In the Dashboard, op
 
 1. `migrations/202610040001_player_state.sql` creates per-account player saves. This should already be installed for the running game.
 2. `migrations/202610050001_game_content.sql` creates shared content storage and policies. All players can read game content; only the configured editor email (`leekh375@naver.com`) can insert or update it.
+3. `migrations/202610060001_gm_story_reset.sql` adds the editor-only GM assignment screen and database-checked GM story-reset command. It lists registered accounts only through an editor-checked database function, and GM reset changes story/quest progress while preserving level, XP, gold, inventory, and equipment.
 
-Never put a `service_role` or secret key in the browser. The browser uses only the publishable key, and the database enforces editor write access with Row Level Security.
+Never put a `service_role` or secret key in the browser. The browser uses only the publishable key. The GM migration uses security-definer RPC functions with explicit editor/GM checks; do not bypass those checks or expose service-role credentials.
 
 ## Publish the initial content
 
