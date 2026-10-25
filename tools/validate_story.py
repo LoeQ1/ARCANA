@@ -5,8 +5,8 @@ import json
 import sys
 from pathlib import Path
 
-CONDITIONS = {"flagEquals", "levelAtLeast", "hasItem", "questStatus", "locationIs"}
-EFFECTS = {"setFlag", "startQuest", "advanceQuest", "completeQuest", "grantItem", "removeItem", "grantXp", "grantGold", "unlockLocation", "changeRelation"}
+CONDITIONS = {"flagEquals", "levelAtLeast", "hasItem", "questStatus", "locationIs", "stationUnlocked", "recipeKnown"}
+EFFECTS = {"setFlag", "startQuest", "advanceQuest", "completeQuest", "grantItem", "removeItem", "grantXp", "grantGold", "unlockLocation", "unlockStation", "discoverRecipe", "changeRelation"}
 
 
 def validate(story, gameplay=None):
@@ -36,11 +36,13 @@ def validate(story, gameplay=None):
             required = {
                 "flagEquals": ("key", "value"), "levelAtLeast": ("value",),
                 "hasItem": ("itemId",), "questStatus": ("questId", "status"),
-                "locationIs": ("location",), "setFlag": ("key", "value"),
+                "locationIs": ("location",), "stationUnlocked": ("stationId",),
+                "recipeKnown": ("recipeId",), "setFlag": ("key", "value"),
                 "startQuest": ("questId",), "advanceQuest": ("questId", "step"),
                 "completeQuest": ("questId",), "grantItem": ("itemId", "quantity"),
                 "removeItem": ("itemId", "quantity"), "grantXp": ("amount",),
                 "grantGold": ("amount",), "unlockLocation": ("location",),
+                "unlockStation": ("stationId",), "discoverRecipe": ("recipeId",),
                 "changeRelation": ("npcId", "amount"),
             }[kind]
             for field in required:
@@ -55,6 +57,8 @@ def validate(story, gameplay=None):
                     "questStatus": ("quests", "questId"), "startQuest": ("quests", "questId"),
                     "advanceQuest": ("quests", "questId"), "completeQuest": ("quests", "questId"),
                     "locationIs": ("locations", "location"), "unlockLocation": ("locations", "location"),
+                    "stationUnlocked": ("stations", "stationId"), "unlockStation": ("stations", "stationId"),
+                    "recipeKnown": ("recipes", "recipeId"), "discoverRecipe": ("recipes", "recipeId"),
                 }.get(kind)
                 if references:
                     collection, field = references

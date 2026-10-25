@@ -16,8 +16,8 @@ const userAdminMessage = $("#userAdminMessage");
 const inspector = $("#inspector");
 const nodeForm = $("#nodeForm");
 const choicesEditor = $("#choicesEditor");
+const nodeConditionsEditor = $("#nodeConditionsEditor");
 const questTriggerList = $("#questTriggerList");
-const fileInput = $("#fileInput");
 const validationPanel = $("#validationPanel");
 const validationTitle = $("#validationTitle");
 const validationList = $("#validationList");
@@ -28,9 +28,7 @@ let audioTracks = [];
 let previewAudio = null;
 let previewAudioTrackId = null;
 let activeNodeId = null;
-let fileHandle = null;
 let gameplayFileHandle = null;
-let currentFileName = "arrival.json";
 let dirty = false;
 let gameplayDirty = false;
 let contentRevision = 0;
@@ -40,6 +38,36 @@ let activeMonsterId = null;
 let activeItemId = null;
 let activeStationId = null;
 let activeRecipeId = null;
+
+const RULE_SCHEMAS = {
+    conditions: {
+        flagEquals: { label: "진행 플래그 값", help: "이야기 진행 상태에 저장된 플래그 값이 일치하는지 확인합니다.", fields: [["key", "플래그 이름", "text"], ["value", "기대 값", "value"]] },
+        levelAtLeast: { label: "최소 레벨", help: "플레이어 레벨이 지정한 값 이상인지 확인합니다.", fields: [["value", "레벨", "number", 1]] },
+        hasItem: { label: "아이템 보유", help: "인벤토리에 아이템이 지정 수량 이상 있는지 확인합니다.", fields: [["itemId", "아이템", "items"], ["quantity", "필요 수량", "number", 1]] },
+        questStatus: { label: "퀘스트 상태", help: "퀘스트가 진행 중인지 또는 완료됐는지 확인합니다.", fields: [["questId", "퀘스트", "quests"], ["status", "상태", "status"]] },
+        locationIs: { label: "현재 지역", help: "플레이어가 지정한 지역에 있는지 확인합니다.", fields: [["location", "지역", "locations"]] },
+        stationUnlocked: { label: "장치 해금 여부", help: "변환 장치가 해금됐는지 확인합니다.", fields: [["stationId", "장치", "stations"]] },
+        recipeKnown: { label: "레시피 발견 여부", help: "레시피를 발견했는지 확인합니다.", fields: [["recipeId", "레시피", "recipes"]] }
+    },
+    effects: {
+        setFlag: { label: "진행 플래그 기록", help: "이름과 값으로 이야기 진행 상태를 기록합니다. 이후 같은 플래그 조건에서 확인할 수 있습니다.", fields: [["key", "플래그 이름", "text"], ["value", "저장할 값", "value"]] },
+        startQuest: { label: "퀘스트 시작", help: "선택한 퀘스트를 진행 중으로 바꿉니다.", fields: [["questId", "퀘스트", "quests"]] },
+        advanceQuest: { label: "퀘스트 단계 변경", help: "진행 중인 퀘스트의 단계를 기록합니다.", fields: [["questId", "퀘스트", "quests"], ["step", "단계 이름", "text"]] },
+        completeQuest: { label: "퀘스트 완료", help: "선택한 퀘스트를 완료 처리합니다.", fields: [["questId", "퀘스트", "quests"]] },
+        grantItem: { label: "아이템 지급", help: "플레이어 인벤토리에 아이템을 추가합니다.", fields: [["itemId", "아이템", "items"], ["quantity", "수량", "number", 1]] },
+        removeItem: { label: "아이템 회수", help: "플레이어 인벤토리에서 아이템을 제거합니다. 보유 수량이 부족하면 효과가 실패합니다.", fields: [["itemId", "아이템", "items"], ["quantity", "수량", "number", 1]] },
+        grantXp: { label: "경험치 지급", help: "플레이어에게 경험치를 추가합니다.", fields: [["amount", "경험치", "number", 0]] },
+        grantGold: { label: "골드 지급", help: "플레이어에게 골드를 추가합니다.", fields: [["amount", "골드", "number", 0]] },
+        unlockLocation: { label: "지역 해금", help: "플레이어가 이동할 수 있도록 지역을 엽니다.", fields: [["location", "지역", "locations"]] },
+        unlockStation: { label: "장치 해금", help: "변환 장치를 사용할 수 있도록 엽니다.", fields: [["stationId", "장치", "stations"]] },
+        discoverRecipe: { label: "레시피 공개", help: "변환 장치의 레시피를 플레이어에게 공개합니다.", fields: [["recipeId", "레시피", "recipes"]] },
+        changeRelation: { label: "인물 관계 변경", help: "인물 관계 수치를 지정한 만큼 변경합니다.", fields: [["npcId", "인물 ID", "text"], ["amount", "변경 수치", "number", 0]] }
+    }
+};
+
+const RULE_FIELD_NAMES = new Set(
+    Object.values(RULE_SCHEMAS).flatMap((rules) => Object.values(rules).flatMap((rule) => rule.fields.map(([name]) => name)))
+);
 
 function setStatus(message, isError = false) {
     validationTitle.textContent = message;
@@ -111,19 +139,8 @@ function renderAudioSettings() {
 
 function updateFileLabel() {
     const changes = [dirty && "스토리 수정됨", gameplayDirty && "게임 데이터 수정됨"].filter(Boolean);
-    const storageLabel = contentNeedsPublish ? "Supabase 최초 저장 필요" : `Supabase · r${contentRevision}`;
+    const storageLabel = contentNeedsPublish ? "최초 저장 필요" : changes.length ? "저장 전" : "저장됨";
     $("#storyFileLabel").textContent = `${storageLabel}${changes.length ? ` · ${changes.join(" · ")}` : ""}`;
-}
-
-function parseArray(value, label) {
-    let parsed;
-    try {
-        parsed = JSON.parse(value);
-    } catch (error) {
-        throw new Error(`${label}: ${error.message}`);
-    }
-    if (!Array.isArray(parsed)) throw new Error(`${label}: JSON 배열이어야 합니다.`);
-    return parsed;
 }
 
 function validateStory() {
@@ -269,6 +286,7 @@ function showValidation() {
 
 function getNodeLayout() {
     const ids = Object.keys(story.nodes);
+    const mobile = window.matchMedia("(max-width: 680px)").matches;
     const depths = new Map([[story.startNode, 0]]);
     const pending = [story.startNode];
     while (pending.length) {
@@ -301,13 +319,19 @@ function getNodeLayout() {
     let maxRows = 0;
     for (const [depth, columnIds] of columns) {
         maxRows = Math.max(maxRows, columnIds.length);
-        columnIds.forEach((id, row) => positions.set(id, { x: 32 + depth * 350, y: 30 + row * 190 }));
+        columnIds.forEach((id, row) => positions.set(id, mobile
+            ? { x: 28 + row * 290, y: 30 + depth * 205 }
+            : { x: 32 + depth * 350, y: 30 + row * 190 }));
     }
     return {
         ids,
         positions,
-        width: Math.max(800, 32 + (Math.max(...columns.keys()) + 1) * 350),
-        height: Math.max(520, 30 + maxRows * 190)
+        width: mobile
+            ? Math.max(360, 28 + Math.max(1, ...[...columns.values()].map((column) => column.length)) * 290)
+            : Math.max(800, 32 + (Math.max(...columns.keys()) + 1) * 350),
+        height: mobile
+            ? Math.max(520, 30 + (Math.max(...columns.keys()) + 1) * 205)
+            : Math.max(520, 30 + maxRows * 190)
     };
 }
 
@@ -338,16 +362,21 @@ function renderGraph() {
         for (const [index, choice] of (node.choices || []).entries()) {
             const target = layout.positions.get(choice.next);
             if (!target) continue;
-            const x1 = source.x + 260;
-            const y1 = source.y + 72 + Math.min(index, 3) * 8;
-            const x2 = target.x;
-            const y2 = target.y + 72;
-            const backward = x2 < x1;
-            const curve = Math.max(55, Math.abs(x2 - x1) * .45);
+            const mobile = window.matchMedia("(max-width: 680px)").matches;
+            const x1 = mobile ? source.x + 130 : source.x + 260;
+            const y1 = mobile ? source.y + 146 : source.y + 72 + Math.min(index, 3) * 8;
+            const x2 = mobile ? target.x + 130 : target.x;
+            const y2 = mobile ? target.y : target.y + 72;
+            const backward = mobile ? y2 < y1 : x2 < x1;
+            const curve = Math.max(55, (mobile ? Math.abs(y2 - y1) : Math.abs(x2 - x1)) * .45);
             const path = svgElement("path", {
                 d: backward
-                    ? `M ${x1} ${y1} C ${x1 + 45} ${y1 - 82}, ${x2 - 45} ${y2 - 82}, ${x2} ${y2}`
-                    : `M ${x1} ${y1} C ${x1 + curve} ${y1}, ${x2 - curve} ${y2}, ${x2} ${y2}`,
+                    ? mobile
+                        ? `M ${x1} ${y1} C ${x1 + 82} ${y1 - 45}, ${x2 + 82} ${y2 + 45}, ${x2} ${y2}`
+                        : `M ${x1} ${y1} C ${x1 + 45} ${y1 - 82}, ${x2 - 45} ${y2 - 82}, ${x2} ${y2}`
+                    : mobile
+                        ? `M ${x1} ${y1} C ${x1} ${y1 + curve}, ${x2} ${y2 - curve}, ${x2} ${y2}`
+                        : `M ${x1} ${y1} C ${x1 + curve} ${y1}, ${x2 - curve} ${y2}, ${x2} ${y2}`,
                 class: `edge-path${backward ? " back-edge" : ""}`
             });
             const title = svgElement("title");
@@ -403,65 +432,247 @@ function addField(container, labelText, name, value, { multiline = false, rows =
     container.append(label);
 }
 
-function renderStationUnlockControls(container, choice, effectsField) {
-    container.replaceChildren();
-    const stationEffects = (choice.effects || []).filter((effect) => effect.type === "unlockStation");
-    const createStationSelect = (selectedId, onChange, emptyLabel) => {
-        const select = document.createElement("select");
-        const emptyOption = document.createElement("option");
-        emptyOption.value = "";
-        emptyOption.textContent = emptyLabel;
-        select.append(emptyOption);
-        for (const [id, station] of Object.entries(gameplay.stations || {})) {
-            const option = document.createElement("option");
-            option.value = id;
-            option.textContent = `${station.name || id} · ${id}`;
-            select.append(option);
-        }
-        select.value = selectedId || "";
-        select.addEventListener("change", () => {
-            let effects;
-            try {
-                effects = parseArray(effectsField.value, `선택지 '${choice.id}' 효과`);
-            } catch (error) {
-                $("#editMessage").textContent = error.message;
-                renderStationUnlockControls(container, choice, effectsField);
-                return;
-            }
-            onChange(effects, select.value);
-            choice.effects = effects;
-            effectsField.value = JSON.stringify(effects, null, 2);
-            $("#editMessage").textContent = "";
-            markDirty();
-            showValidation();
-            renderStationUnlockControls(container, choice, effectsField);
-        });
-        return select;
+function getRuleOptions(source) {
+    const collections = {
+        items: gameplay.items,
+        quests: gameplay.quests,
+        locations: gameplay.locations,
+        stations: gameplay.stations,
+        recipes: gameplay.recipes
     };
+    return Object.entries(collections[source] || {}).map(([id, value]) => [id, value.name || id]);
+}
 
+function appendRuleOptions(select, options, selected) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "선택하세요";
+    select.append(placeholder);
+    for (const [id, label] of options) {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = `${label} · ${id}`;
+        select.append(option);
+    }
+    if (selected && !options.some(([id]) => id === selected)) {
+        const missing = document.createElement("option");
+        missing.value = selected;
+        missing.textContent = `찾을 수 없음 · ${selected}`;
+        select.append(missing);
+    }
+    select.value = selected || "";
+}
+
+function createRuleField(fieldName, labelText, controlType, rule, fallback) {
     const label = document.createElement("label");
-    label.textContent = "스토리 선택 시 해금할 변환 장치";
-    container.append(label);
-    for (const [index, effect] of stationEffects.entries()) {
-        const row = document.createElement("div");
-        row.className = "station-unlock-effect";
-        row.append(createStationSelect(effect.stationId, (effects, stationId) => {
-            const matches = effects.filter((entry) => entry.type === "unlockStation");
-            const target = matches[index];
-            if (!target) {
-                if (stationId) effects.push({ type: "unlockStation", stationId });
-                return;
-            }
-            if (!stationId) effects.splice(effects.indexOf(target), 1);
-            else target.stationId = stationId;
-        }, "장치 해금 효과 제거"));
-        container.append(row);
+    label.className = "rule-field";
+    label.textContent = labelText;
+
+    if (controlType === "value") {
+        const value = rule[fieldName];
+        const valueType = value === undefined ? "text" : typeof value === "boolean" ? "boolean" : typeof value === "number" ? "number" : "text";
+        const typeSelect = document.createElement("select");
+        typeSelect.dataset.ruleValueKind = "";
+        for (const [type, text] of [["text", "문자"], ["number", "숫자"], ["boolean", "참/거짓"]]) {
+            const option = document.createElement("option");
+            option.value = type;
+            option.textContent = text;
+            typeSelect.append(option);
+        }
+        typeSelect.value = valueType;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.dataset.ruleField = fieldName;
+        input.value = value === undefined ? "" : String(value);
+        label.append(typeSelect, input);
+        return label;
     }
 
-    const addSelect = createStationSelect("", (effects, stationId) => {
-        if (stationId) effects.push({ type: "unlockStation", stationId });
-    }, "장치 해금 효과 추가...");
-    container.append(addSelect);
+    let field;
+    if (["items", "quests", "locations", "stations", "recipes"].includes(controlType)) {
+        field = document.createElement("select");
+        appendRuleOptions(field, getRuleOptions(controlType), rule[fieldName]);
+    } else if (controlType === "status") {
+        field = document.createElement("select");
+        appendRuleOptions(field, [["active", "진행 중"], ["complete", "완료"]], rule[fieldName]);
+    } else {
+        field = document.createElement("input");
+        field.type = controlType;
+        if (controlType === "number") {
+            field.step = "1";
+            field.min = String(fallback ?? 0);
+        }
+        field.value = rule[fieldName] ?? (fallback ?? "");
+    }
+    field.dataset.ruleField = fieldName;
+    label.append(field);
+    return label;
+}
+
+function renderRuleEditor(container, rules, kind) {
+    const schemas = RULE_SCHEMAS[kind];
+    container.replaceChildren();
+    container.dataset.ruleKind = kind;
+    for (const [index, rule] of rules.entries()) {
+        const card = document.createElement("section");
+        card.className = "rule-card";
+        card.dataset.ruleOriginal = JSON.stringify(rule);
+
+        const header = document.createElement("div");
+        header.className = "rule-card-header";
+        const type = document.createElement("select");
+        type.dataset.ruleType = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = kind === "conditions" ? "조건 종류 선택" : "효과 종류 선택";
+        type.append(placeholder);
+        for (const [id, schema] of Object.entries(schemas)) {
+            const option = document.createElement("option");
+            option.value = id;
+            option.textContent = schema.label;
+            type.append(option);
+        }
+        if (rule.type && !Object.hasOwn(schemas, rule.type)) {
+            const advancedOption = document.createElement("option");
+            advancedOption.value = rule.type;
+            advancedOption.textContent = `고급 규칙 · ${rule.type}`;
+            type.append(advancedOption);
+        }
+        type.value = rule.type || "";
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "danger";
+        remove.textContent = "삭제";
+        remove.addEventListener("click", () => {
+            getRuleList(container).splice(index, 1);
+            markDirty();
+            renderInspector();
+            showValidation();
+        });
+        header.append(type, remove);
+        card.append(header);
+
+        const schema = Object.hasOwn(schemas, rule.type) ? schemas[rule.type] : null;
+        if (schema) {
+            const help = document.createElement("p");
+            help.className = "rule-help";
+            help.textContent = schema.help;
+            card.append(help);
+            for (const [fieldName, label, controlType, fallback] of schema.fields) {
+                card.append(createRuleField(fieldName, label, controlType, rule, fallback));
+            }
+        } else if (rule.type) {
+            const advanced = document.createElement("textarea");
+            advanced.className = "code-field";
+            advanced.rows = 4;
+            advanced.spellcheck = false;
+            advanced.dataset.ruleAdvanced = "";
+            advanced.value = JSON.stringify(rule, null, 2);
+            card.append(advanced);
+        }
+        container.append(card);
+    }
+}
+
+function getRuleList(container) {
+    const choiceCard = container.closest(".choice-card");
+    if (!choiceCard) return story.nodes[activeNodeId].conditions;
+    const choice = story.nodes[activeNodeId].choices[Number(choiceCard.dataset.choiceIndex)];
+    return choice[container.dataset.ruleKind];
+}
+
+function createDefaultRule(type, kind) {
+    const schema = RULE_SCHEMAS[kind][type];
+    const rule = { type };
+    for (const [fieldName, , controlType, fallback] of schema.fields) {
+        if (controlType === "value") rule[fieldName] = "";
+        else if (controlType === "number") rule[fieldName] = fallback ?? 0;
+        else if (controlType === "status") rule[fieldName] = "active";
+        else rule[fieldName] = "";
+    }
+    return rule;
+}
+
+function readRuleEditor(container) {
+    const rules = [];
+    const schemas = RULE_SCHEMAS[container.dataset.ruleKind];
+    for (const card of container.querySelectorAll(".rule-card")) {
+        const type = card.querySelector("[data-rule-type]").value;
+        if (!type) throw new Error("조건/효과 종류를 선택하거나 빈 항목을 삭제하세요.");
+        if (!schemas[type]) {
+            let advanced;
+            try {
+                advanced = JSON.parse(card.querySelector("[data-rule-advanced]").value);
+            } catch (error) {
+                throw new Error(`고급 규칙 JSON 형식 오류: ${error.message}`);
+            }
+            if (!advanced || typeof advanced !== "object" || Array.isArray(advanced)) throw new Error("고급 규칙은 JSON 객체여야 합니다.");
+            rules.push(advanced);
+            continue;
+        }
+
+        let original = {};
+        try {
+            original = JSON.parse(card.dataset.ruleOriginal || "{}");
+        } catch {
+            original = {};
+        }
+        for (const name of RULE_FIELD_NAMES) delete original[name];
+        const rule = { ...original, type };
+        for (const field of card.querySelectorAll("[data-rule-field]")) {
+            const name = field.dataset.ruleField;
+            const schemaField = schemas[type].fields.find(([candidate]) => candidate === name);
+            const controlType = schemaField[2];
+            if (controlType === "number") {
+                const value = field.value.trim() ? Number(field.value) : Number.NaN;
+                if (!Number.isSafeInteger(value) || value < (schemaField[3] ?? 0)) {
+                    throw new Error(`'${schemaField[1]}'은(는) ${schemaField[3] ?? 0} 이상의 정수여야 합니다.`);
+                }
+                rule[name] = value;
+            } else if (controlType === "value") {
+                const valueType = card.querySelector("[data-rule-value-kind]").value;
+                if (valueType === "boolean") {
+                    if (!["true", "false"].includes(field.value.toLowerCase())) throw new Error("참/거짓 값은 true 또는 false로 입력하세요.");
+                    rule[name] = field.value.toLowerCase() === "true";
+                } else if (valueType === "number") {
+                    const value = field.value.trim() ? Number(field.value) : Number.NaN;
+                    if (!Number.isFinite(value)) throw new Error("숫자 값을 입력하세요.");
+                    rule[name] = value;
+                } else {
+                    rule[name] = field.value;
+                }
+            } else {
+                if (!field.value.trim()) throw new Error(`'${schemaField[1]}' 항목을 선택하거나 입력하세요.`);
+                rule[name] = field.value;
+            }
+        }
+        rules.push(rule);
+    }
+    return rules;
+}
+
+function createRuleSection(source, kind, title, description, addText, onAdd) {
+    const section = document.createElement("section");
+    section.className = "rule-section";
+    const heading = document.createElement("div");
+    heading.className = "rule-section-heading";
+    const titleElement = document.createElement("h4");
+    titleElement.textContent = title;
+    const help = document.createElement("p");
+    help.textContent = description;
+    heading.append(titleElement, help);
+
+    const editor = document.createElement("div");
+    editor.className = "rule-editor";
+    editor.dataset.ruleKind = kind;
+    renderRuleEditor(editor, source[kind] || [], kind);
+    const add = document.createElement("button");
+    add.type = "button";
+    add.textContent = addText;
+    add.addEventListener("click", onAdd);
+    section.append(heading, editor, add);
+    return section;
 }
 
 function createChoiceCard(choice, index) {
@@ -506,13 +717,19 @@ function createChoiceCard(choice, index) {
     next.value = choice.next || "";
     nextLabel.append(next);
     card.append(nextLabel);
-    addField(card, "표시 조건", "conditions", choice.conditions, { multiline: true, rows: 3, json: true });
-    addField(card, "선택 효과", "effects", choice.effects, { multiline: true, rows: 4, json: true });
-    const effectsField = card.querySelector('[data-choice-field="effects"]');
-    const stationUnlockControls = document.createElement("div");
-    stationUnlockControls.className = "station-unlock-controls";
-    renderStationUnlockControls(stationUnlockControls, choice, effectsField);
-    card.append(stationUnlockControls);
+    const conditions = createRuleSection(
+        choice, "conditions", "표시 조건",
+        "조건을 모두 만족할 때만 이 선택지가 플레이어에게 보입니다. 조건이 없으면 항상 표시됩니다.",
+        "+ 표시 조건",
+        () => addRule(card.querySelector('[data-rule-kind="conditions"]'), choice, "conditions")
+    );
+    const effects = createRuleSection(
+        choice, "effects", "선택 효과",
+        "선택했을 때 적용할 변화입니다. 아이템·퀘스트 보상은 같은 선택에서 중복 적용되지 않습니다.",
+        "+ 선택 효과",
+        () => addRule(card.querySelector('[data-rule-kind="effects"]'), choice, "effects")
+    );
+    card.append(conditions, effects);
     for (const effect of choice.effects || []) {
         if (effect.type !== "startQuest") continue;
         const summary = document.createElement("p");
@@ -543,14 +760,29 @@ function renderInspector() {
     $("#nodeId").value = activeNodeId;
     $("#nodeTitle").value = node.title || "";
     $("#nodeText").value = node.text || "";
-    $("#nodeConditions").value = JSON.stringify(node.conditions || [], null, 2);
+    renderRuleEditor(nodeConditionsEditor, node.conditions || [], "conditions");
     $("#editMessage").textContent = "";
     choicesEditor.replaceChildren();
     (node.choices || []).forEach((choice, index) => choicesEditor.append(createChoiceCard(choice, index)));
 }
 
+function addRule(container, source, kind) {
+    const rules = source[kind] ||= [];
+    try {
+        rules.splice(0, rules.length, ...readRuleEditor(container));
+    } catch (error) {
+        $("#editMessage").textContent = error.message;
+        return;
+    }
+    rules.push({});
+    markDirty();
+    renderInspector();
+    showValidation();
+}
+
 function getWorldLayout() {
     const ids = Object.keys(gameplay.locations || {});
+    const mobile = window.matchMedia("(max-width: 680px)").matches;
     const startId = gameplay.locations.village ? "village" : ids[0];
     const depths = new Map(startId ? [[startId, 0]] : []);
     const pending = startId ? [startId] : [];
@@ -576,12 +808,18 @@ function getWorldLayout() {
     let maxRows = 0;
     for (const [depth, column] of columns) {
         maxRows = Math.max(maxRows, column.length);
-        column.forEach((id, row) => positions.set(id, { x: 34 + depth * 340, y: 34 + row * 180 }));
+        column.forEach((id, row) => positions.set(id, mobile
+            ? { x: 28 + row * 290, y: 34 + depth * 195 }
+            : { x: 34 + depth * 340, y: 34 + row * 180 }));
     }
     return {
         ids, positions,
-        width: Math.max(760, 34 + Math.max(0, ...columns.keys()) * 340 + 320),
-        height: Math.max(500, 34 + maxRows * 180)
+        width: mobile
+            ? Math.max(360, 28 + Math.max(1, ...[...columns.values()].map((column) => column.length)) * 290)
+            : Math.max(760, 34 + Math.max(0, ...columns.keys()) * 340 + 320),
+        height: mobile
+            ? Math.max(500, 34 + (Math.max(0, ...columns.keys()) + 1) * 195)
+            : Math.max(500, 34 + maxRows * 180)
     };
 }
 
@@ -613,12 +851,15 @@ function renderWorldGraph() {
             if (renderedRoutes.has(routeKey)) continue;
             renderedRoutes.add(routeKey);
             const reciprocal = (gameplay.locations[targetId]?.exits || []).includes(sourceId);
-            const x1 = source.x + 260;
-            const y1 = source.y + 63;
-            const x2 = target.x;
-            const y2 = target.y + 63;
+            const mobile = window.matchMedia("(max-width: 680px)").matches;
+            const x1 = mobile ? source.x + 130 : source.x + 260;
+            const y1 = mobile ? source.y + 126 : source.y + 63;
+            const x2 = mobile ? target.x + 130 : target.x;
+            const y2 = mobile ? target.y + 63 : target.y + 63;
             const path = svgElement("path", {
-                d: `M ${x1} ${y1} C ${x1 + 48} ${y1}, ${x2 - 48} ${y2}, ${x2} ${y2}`,
+                d: mobile
+                    ? `M ${x1} ${y1} C ${x1} ${y1 + 48}, ${x2} ${y2 - 48}, ${x2} ${y2}`
+                    : `M ${x1} ${y1} C ${x1 + 48} ${y1}, ${x2 - 48} ${y2}, ${x2} ${y2}`,
                 class: "edge-path",
                 "marker-end": "url(#worldArrow)",
                 ...(reciprocal ? { "marker-start": "url(#worldArrow)" } : {})
@@ -1470,7 +1711,7 @@ async function loadAdminUsers() {
         userAdminMessage.textContent = "등록된 가입자가 없습니다.";
         return;
     }
-    userAdminMessage.textContent = `가입자 ${users.length}명 · 체크하면 GM 권한을 부여하고, 해제하면 회수합니다.`;
+    userAdminMessage.textContent = `가입자 ${users.length}명 · GM 권한 체크를 켜거나 끄세요. 편집자 계정은 고정되어 있습니다.`;
     for (const user of users) {
         const card = document.createElement("article");
         card.className = "user-admin-card";
@@ -1483,17 +1724,21 @@ async function loadAdminUsers() {
         const created = document.createElement("small");
         created.textContent = user.created_at ? `가입: ${new Date(user.created_at).toLocaleDateString("ko-KR")}` : "";
         identity.append(name, email, created);
-        const label = document.createElement("label");
-        label.className = "gm-role-toggle";
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = user.is_gm === true;
-        checkbox.disabled = user.is_editor === true;
-        checkbox.setAttribute("aria-label", `${user.email || user.character_name} GM 권한`);
-        const labelText = document.createElement("span");
-        labelText.textContent = user.is_editor ? "편집자" : "GM";
-        label.append(checkbox, labelText);
-        if (!user.is_editor) {
+        if (user.is_editor) {
+            const badge = document.createElement("span");
+            badge.className = "user-role-badge editor-role-badge";
+            badge.textContent = "편집자 계정 · 고정";
+            card.append(identity, badge);
+        } else {
+            const label = document.createElement("label");
+            label.className = "gm-role-toggle";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = user.is_gm === true;
+            checkbox.setAttribute("aria-label", `${user.email || user.character_name} GM 권한`);
+            const labelText = document.createElement("span");
+            labelText.textContent = "GM 권한";
+            label.append(checkbox, labelText);
             checkbox.addEventListener("change", async () => {
                 checkbox.disabled = true;
                 userAdminMessage.textContent = `${user.email} 권한을 저장하는 중입니다…`;
@@ -1508,8 +1753,8 @@ async function loadAdminUsers() {
                 }
                 await loadAdminUsers();
             });
+            card.append(identity, label);
         }
-        card.append(identity, label);
         userAdminList.append(card);
     }
 }
@@ -1669,7 +1914,7 @@ function applyInspectorChanges(mark = true) {
     node.title = $("#nodeTitle").value;
     node.text = $("#nodeText").value;
     try {
-        node.conditions = parseArray($("#nodeConditions").value, "장면 조건");
+        node.conditions = readRuleEditor(nodeConditionsEditor);
     } catch (error) {
         messages.push(error.message);
     }
@@ -1681,12 +1926,13 @@ function applyInspectorChanges(mark = true) {
             const name = field.dataset.choiceField;
             if (name === "id" || name === "text") choice[name] = field.value;
             if (name === "next") choice.next = field.value || null;
-            if (name === "conditions" || name === "effects") {
-                try {
-                    choice[name] = parseArray(field.value, `선택지 '${choice.id}' ${name === "conditions" ? "조건" : "효과"}`);
-                } catch (error) {
-                    messages.push(error.message);
-                }
+        }
+        for (const rules of card.querySelectorAll("[data-rule-kind]")) {
+            const kind = rules.dataset.ruleKind;
+            try {
+                choice[kind] = readRuleEditor(rules);
+            } catch (error) {
+                messages.push(`선택지 '${choice.id}': ${error.message}`);
             }
         }
     }
@@ -1695,6 +1941,26 @@ function applyInspectorChanges(mark = true) {
     renderGraph();
     if (mark) markDirty();
     return messages.length === 0;
+}
+
+function changeRuleType(select) {
+    const card = select.closest(".rule-card");
+    const editor = select.closest("[data-rule-kind]");
+    if (!card || !editor) return;
+    const rules = getRuleList(editor);
+    const index = [...editor.querySelectorAll(".rule-card")].indexOf(card);
+    if (index < 0) return;
+    const type = select.value;
+    const schemas = RULE_SCHEMAS[editor.dataset.ruleKind];
+    rules[index] = Object.hasOwn(schemas, type)
+        ? createDefaultRule(type, editor.dataset.ruleKind)
+        : type
+            ? JSON.parse(card.dataset.ruleOriginal || "{}")
+            : {};
+    if (type && !Object.hasOwn(schemas, type)) rules[index].type = type;
+    markDirty();
+    renderInspector();
+    showValidation();
 }
 
 function addNode() {
@@ -1737,13 +2003,11 @@ function deleteNode() {
     showValidation();
 }
 
-function loadStory(data, fileName, handle = null) {
+function loadStory(data) {
     if (!data || typeof data !== "object" || !data.nodes || typeof data.nodes !== "object") {
         throw new Error("스토리 JSON에 nodes 객체가 없습니다.");
     }
     story = data;
-    currentFileName = fileName || "story.json";
-    fileHandle = handle;
     dirty = false;
     activeNodeId = story.startNode && story.nodes[story.startNode] ? story.startNode : Object.keys(story.nodes)[0];
     updateFileLabel();
@@ -1752,42 +2016,6 @@ function loadStory(data, fileName, handle = null) {
     renderInspector();
     showValidation();
 }
-
-async function openStoryFile() {
-    if (window.showOpenFilePicker) {
-        try {
-            const [handle] = await window.showOpenFilePicker({
-                multiple: false,
-                types: [{ description: "ARCANA 스토리 JSON", accept: { "application/json": [".json"] } }]
-            });
-            const file = await handle.getFile();
-            const data = JSON.parse(await file.text());
-            loadStory(data, file.name, handle);
-            markDirty();
-            showValidation();
-            return;
-        } catch (error) {
-            if (error.name === "AbortError") return;
-            setStatus(`파일을 열지 못했습니다: ${error.message}`, true);
-            return;
-        }
-    }
-    fileInput.click();
-}
-
-fileInput.addEventListener("change", async () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
-    try {
-        loadStory(JSON.parse(await file.text()), file.name);
-        markDirty();
-        showValidation();
-    } catch (error) {
-        setStatus(`파일을 열지 못했습니다: ${error.message}`, true);
-    } finally {
-        fileInput.value = "";
-    }
-});
 
 async function saveStory() {
     if (!story) return;
@@ -1818,18 +2046,30 @@ async function saveStory() {
     }
 }
 
-inspector.addEventListener("input", applyInspectorChanges);
-inspector.addEventListener("change", applyInspectorChanges);
+inspector.addEventListener("input", (event) => {
+    if (event.target.matches("[data-rule-type]")) return;
+    applyInspectorChanges();
+});
+inspector.addEventListener("change", (event) => {
+    if (event.target.matches("[data-rule-type]")) {
+        changeRuleType(event.target);
+        return;
+    }
+    applyInspectorChanges();
+});
 $("#addNodeButton").addEventListener("click", addNode);
+$("#addNodeConditionButton").addEventListener("click", () => addRule(nodeConditionsEditor, story.nodes[activeNodeId], "conditions"));
 $("#addChoiceButton").addEventListener("click", addChoice);
 $("#deleteNodeButton").addEventListener("click", deleteNode);
-$("#openButton").addEventListener("click", openStoryFile);
 $("#saveButton").addEventListener("click", saveStory);
-$("#validateButton").addEventListener("click", showValidation);
 $("#storyId").addEventListener("input", applyStoryMeta);
 $("#storyVersion").addEventListener("input", applyStoryMeta);
 $("#storyStartNode").addEventListener("change", applyStoryMeta);
 document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => setActiveTab(button.dataset.tab)));
+window.matchMedia("(max-width: 680px)").addEventListener("change", () => {
+    renderGraph();
+    renderWorldGraph();
+});
 $("#reloadUsersButton").addEventListener("click", loadAdminUsers);
 $("#addLocationButton").addEventListener("click", addLocation);
 $("#deleteLocationButton").addEventListener("click", deleteLocation);
@@ -1897,7 +2137,7 @@ async function initializeEditor() {
         activeItemId = Object.keys(gameplay.items || {})[0] || null;
         activeStationId = Object.keys(gameplay.stations || {})[0] || null;
         activeRecipeId = Object.entries(gameplay.recipes || {}).find(([, recipe]) => recipe.stationId === activeStationId)?.[0] || null;
-        loadStory(storyData, "arrival.json");
+        loadStory(storyData);
         renderWorldGraph();
         renderLocationInspector();
         renderMonsterList();

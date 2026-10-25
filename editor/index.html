@@ -7,7 +7,7 @@
     <script src="../supabase-config.js?v=2"></script>
     <script src="editor-auth.js?v=2"></script>
     <title>ARCANA 스토리 편집기</title>
-    <link rel="stylesheet" href="editor.css?v=13">
+    <link rel="stylesheet" href="editor.css?v=16">
 </head>
 <body>
     <header class="topbar">
@@ -18,11 +18,7 @@
         <div class="toolbar">
             <a class="return-game-link" href="../">게임으로 돌아가기</a>
             <span id="storyFileLabel" class="file-label">불러오는 중…</span>
-            <button id="openButton" type="button">JSON 열기</button>
-            <button id="saveButton" class="primary" type="button" title="스토리와 게임 데이터를 Supabase에 저장합니다.">Supabase 저장</button>
-            <button id="validateButton" type="button">검증</button>
-            <button id="addNodeButton" type="button">+ 장면 추가</button>
-            <input id="fileInput" type="file" accept=".json,application/json" hidden>
+            <button id="saveButton" class="primary" type="button" title="스토리와 게임 데이터를 저장합니다.">저장</button>
         </div>
     </header>
 
@@ -45,9 +41,12 @@
             <div class="panel-heading">
                 <div>
                     <h2>스토리 흐름</h2>
-                    <p>장면 카드를 선택하면 오른쪽에서 편집할 수 있습니다. 연결선에 마우스를 올리면 선택지 내용을 확인합니다.</p>
+                    <p>장면 카드를 선택해 내용을 편집하세요.</p>
                 </div>
-                <span id="graphSummary" class="graph-summary"></span>
+                <div class="graph-heading-actions">
+                    <span id="graphSummary" class="graph-summary"></span>
+                    <button id="addNodeButton" type="button">+ 장면 추가</button>
+                </div>
             </div>
             <div id="graphViewport" class="graph-viewport" tabindex="0" aria-label="장면 그래프 캔버스">
                 <div id="graphCanvas" class="graph-canvas">
@@ -80,7 +79,14 @@
                 <label>장면 ID <input id="nodeId" type="text" readonly></label>
                 <label>제목 <input id="nodeTitle" type="text" maxlength="100"></label>
                 <label>본문 <textarea id="nodeText" rows="5"></textarea></label>
-                <label>장면 표시 조건 <small>JSON 배열</small><textarea id="nodeConditions" class="code-field" rows="3" spellcheck="false"></textarea></label>
+                <section class="rule-section">
+                    <div class="rule-section-heading">
+                        <h3>장면 표시 조건</h3>
+                        <p>모든 조건을 만족해야 장면을 열 수 있습니다. 조건이 맞지 않으면 진행할 수 없으므로, 선택지를 감추려면 선택지의 표시 조건을 사용하세요.</p>
+                    </div>
+                    <div id="nodeConditionsEditor" class="rule-editor"></div>
+                    <button id="addNodeConditionButton" type="button">+ 장면 조건</button>
+                </section>
                 <div class="choice-heading">
                     <div><h3>선택지</h3><p>선택지를 고르면 효과가 적용되고 다음 장면으로 이동합니다.</p></div>
                     <button id="addChoiceButton" type="button">+ 선택지</button>
@@ -257,12 +263,13 @@
             </div>
             <button id="reloadUsersButton" type="button">목록 새로고침</button>
         </div>
+        <p class="user-admin-help">이 화면은 편집자 지정이 아니라 GM 권한 관리입니다. 편집자 계정은 시스템 설정으로 고정되어 변경할 수 없습니다. GM은 게임에서 숨겨진 스토리 초기화 명령을 사용할 수 있습니다.</p>
         <p id="userAdminMessage" role="status" aria-live="polite">가입자 목록을 불러오려면 새로고침을 누르세요.</p>
         <div id="userAdminList" class="user-admin-list"></div>
     </section>
 
     <script src="../game-content-store.js?v=1"></script>
     <script src="../game/story-engine.js?v=2"></script>
-    <script src="editor.js?v=23"></script>
+    <script src="editor.js?v=26"></script>
 </body>
 </html>

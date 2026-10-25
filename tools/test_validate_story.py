@@ -34,6 +34,21 @@ class StoryValidatorTests(unittest.TestCase):
         story["nodes"]["village_notice"]["choices"][0]["effects"][1]["itemId"] = "missing_item"
         self.assertTrue(any("missing_item" in error for error in validate(story, self.gameplay)))
 
+    def test_station_and_recipe_rules_are_supported(self):
+        story = copy.deepcopy(self.story)
+        choice = story["nodes"]["village_notice"]["choices"][0]
+        station_id = next(iter(self.gameplay["stations"]))
+        recipe_id = next(iter(self.gameplay["recipes"]))
+        choice["conditions"] = [
+            {"type": "stationUnlocked", "stationId": station_id},
+            {"type": "recipeKnown", "recipeId": recipe_id},
+        ]
+        choice["effects"].extend([
+            {"type": "unlockStation", "stationId": station_id},
+            {"type": "discoverRecipe", "recipeId": recipe_id},
+        ])
+        self.assertEqual(validate(story, self.gameplay), [])
+
 
 if __name__ == "__main__":
     unittest.main()

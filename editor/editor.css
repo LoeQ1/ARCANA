@@ -127,6 +127,7 @@ p { margin: 0; }
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .panel-heading p, .choice-heading p { color: #9297a5; font-size: 12px; line-height: 1.5; }
 .graph-summary { flex: none; color: #9297a5; font-size: 12px; }
+.graph-heading-actions { display: flex; align-items: center; gap: 10px; }
 
 .graph-viewport {
     flex: 1;
@@ -218,6 +219,17 @@ p { margin: 0; }
 .choice-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #a8b17e; font-size: 12px; font-weight: 700; }
 .choice-card-header button { min-height: 28px; padding: 3px 8px; font-size: 11px; }
 .choice-card label { margin: 10px 0; }
+.rule-section { margin-top: 13px; padding: 10px; border: 1px solid #343741; border-radius: 7px; background: #191a21; }
+.rule-section-heading h4 { margin: 0 0 5px; color: #d8dec5; font-size: 12px; }
+.rule-section-heading p, .rule-help { margin: 0 0 9px; color: #9297a5; font-size: 10px; line-height: 1.5; }
+.rule-editor { display: grid; gap: 8px; }
+.rule-card { padding: 9px; border: 1px solid #393c46; border-radius: 7px; background: #202129; }
+.rule-card-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.rule-card-header select { margin: 0; }
+.rule-card-header button { min-height: 32px; }
+.rule-card .rule-field { margin: 9px 0 0; }
+.rule-card .rule-field input, .rule-card .rule-field select { margin-top: 5px; }
+.rule-section > button { width: 100%; margin-top: 8px; }
 .edit-message { min-height: 18px; color: #ffb8b8; font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 960px) {
@@ -236,6 +248,9 @@ p { margin: 0; }
     .recipe-row, .recipe-row.outcome-row { grid-template-columns: minmax(0, 1fr) minmax(65px, 85px); }
     .graph-panel { min-height: 70vh; padding: 14px; }
     .graph-viewport { min-height: 55vh; }
+    .graph-canvas { min-width: 0; }
+    .graph-heading-actions { align-items: flex-end; flex-direction: column; gap: 7px; }
+    .graph-heading-actions button { min-height: 34px; }
     .inspector { border-top: 1px solid #2c2e37; border-left: 0; }
     .monster-list-panel { border-right: 0; border-bottom: 1px solid #2c2e37; }
     .world-map-panel, .monster-list-panel, .monster-detail-panel { padding: 14px; }
@@ -243,8 +258,9 @@ p { margin: 0; }
     .editor-tabs { padding-inline: 14px; }
     .global-validation { margin-inline: 14px; }
     .topbar { padding: 14px; }
-    .toolbar { gap: 6px; }
-    .file-label { flex-basis: 100%; }
+    .toolbar { width: 100%; flex-wrap: nowrap; justify-content: space-between; gap: 6px; }
+    .return-game-link, .toolbar button { flex: none; padding-inline: 8px; }
+    .file-label { min-width: 0; max-width: none; flex: 1 1 auto; text-align: center; }
 }
 
 
@@ -257,6 +273,7 @@ p { margin: 0; }
 }
 .user-admin-workspace > .panel-heading { margin-bottom: 16px; }
 .user-admin-workspace > .panel-heading p { margin-top: 5px; color: #a8adba; line-height: 1.5; }
+.user-admin-help { margin: -6px 0 12px; color: #9297a5; font-size: 12px; line-height: 1.5; }
 #userAdminMessage { margin-bottom: 12px; color: #aeb5c4; }
 .user-admin-list { display: grid; gap: 8px; }
 .user-admin-card {
@@ -274,6 +291,7 @@ p { margin: 0; }
 .user-admin-identity strong { font-size: 14px; }
 .gm-role-toggle { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 .gm-role-toggle input { width: 18px; height: 18px; accent-color: #b9e889; }
+.user-role-badge { padding: 6px 9px; border: 1px solid #515943; border-radius: 999px; color: #c9dfa3; background: #22271f; font-size: 11px; white-space: nowrap; }
 @media (max-width: 640px) {
     .user-admin-workspace { margin: 12px; padding: 14px; }
     .user-admin-card { align-items: flex-start; }
