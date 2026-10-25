@@ -514,7 +514,7 @@ async function runCommand(command) {
         return;
     }
 
-    // Hidden GM-only command. Authorization and the state mutation are enforced in PostgreSQL.
+    // Hidden editor/GM command. Authorization and the state mutation are enforced in PostgreSQL.
     if (normalized === "스토리초기화") {
         const { data, error } = await supabaseClient.rpc("arcana_reset_story_progress");
         if (error) throw new Error(error.message || "스토리 초기화 권한이 없거나 초기화에 실패했습니다.");
