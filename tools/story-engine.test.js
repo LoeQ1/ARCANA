@@ -81,7 +81,7 @@ test("지역 진입 트리거는 조건을 만족하면 장면을 열고 최초 
     triggeredStory.nodes.village_notice.trigger = { type: "enterLocation", location: "village", once: true };
     const state = makeState();
     state.story.currentNode = "record_read";
-    assert.equal(ArcanaStoryEngine.onLocationEntered(triggeredStory, state, "village").id, "village_notice");
+    assert.equal(ArcanaStoryEngine.onLocationEntered(triggeredStory, state, "village").title, "낡은 게시판");
     assert.equal(state.story.currentNode, "village_notice");
     assert.equal(ArcanaStoryEngine.onLocationEntered(triggeredStory, state, "village"), null);
     assert.equal(ArcanaStoryEngine.validate(triggeredStory, gameplay).length, 0);
