@@ -234,6 +234,11 @@ function moveTo(destination) {
         setPrompt();
         writeLine(`${gameplayContent.locations[target].name}(으)로 이동합니다.`);
         lookAround();
+        const triggeredNode = ArcanaStoryEngine.onLocationEntered(storyContent, playerState, target);
+        if (triggeredNode) {
+            writeLine("새로운 장면이 시작됩니다.", "system");
+            renderStoryNode();
+        }
         return;
     }
 
