@@ -249,7 +249,7 @@ function renderStoryNode() {
     const node = ArcanaStoryEngine.getCurrentNode(storyContent, playerState);
     writeLine(`[이야기: ${node.title}]`, "system");
     writeLine(node.text);
-    const choices = node.choices.filter((choice) => ArcanaStoryEngine.conditionsMet(choice.conditions, playerState));
+    const choices = node.choices.filter((choice) => ArcanaStoryEngine.conditionsMet(choice.conditions, playerState, choice.conditionsMode || "all"));
     if (!choices.length) {
         writeLine("이 장면에는 더 이상 선택지가 없습니다. 언제든 '이야기'로 다시 확인할 수 있습니다.");
         return;
@@ -565,7 +565,7 @@ async function runCommand(command) {
     } else if (normalized.startsWith("선택 ") || normalized.startsWith("choice ")) {
         const choiceNumber = Number(command.slice(command.indexOf(" ") + 1));
         const node = ArcanaStoryEngine.getCurrentNode(storyContent, playerState);
-        const choices = node.choices.filter((choice) => ArcanaStoryEngine.conditionsMet(choice.conditions, playerState));
+        const choices = node.choices.filter((choice) => ArcanaStoryEngine.conditionsMet(choice.conditions, playerState, choice.conditionsMode || "all"));
         const choice = choices[choiceNumber - 1];
         if (!Number.isInteger(choiceNumber) || !choice) {
             writeLine("현재 장면에 표시된 선택지 번호를 입력하세요. '이야기'로 선택지를 볼 수 있습니다.");
