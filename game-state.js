@@ -27,7 +27,7 @@
             questSteps: {},
             flags: {},
             relations: {},
-            story: { currentNode: story.startNode, contentVersion: story.version, history: [], appliedChoices: [] }
+            story: { currentNode: story.startNode, contentVersion: story.version, history: [], appliedChoices: [], triggeredNodes: [] }
         };
     }
 
@@ -48,6 +48,7 @@
         if (!state.story || typeof state.story !== "object" || !Array.isArray(state.story.history) || !Array.isArray(state.story.appliedChoices)) {
             throw new Error("저장된 스토리 진행 데이터 형식이 올바르지 않습니다.");
         }
+        if (!Array.isArray(state.story.triggeredNodes)) state.story.triggeredNodes = [];
         if (state.story.contentVersion !== story.version) {
             if (state.story.currentNode && !story.nodes[state.story.currentNode]) {
                 throw new Error(`저장된 장면 '${state.story.currentNode}'은 현재 스토리 버전에서 찾을 수 없습니다. 진행 데이터를 초기화하지 않았습니다.`);
