@@ -1,7 +1,7 @@
 (function (global) {
     "use strict";
 
-    const CONDITION_TYPES = new Set(["flagEquals", "levelAtLeast", "hasItem", "questStatus", "locationIs", "stationUnlocked", "recipeKnown"]);
+    const CONDITION_TYPES = new Set(["flagEquals", "levelAtLeast", "hasItem", "questStatus", "locationIs", "stationUnlocked", "recipeKnown", "choiceSelected"]);
     const EFFECT_TYPES = new Set(["setFlag", "startQuest", "advanceQuest", "completeQuest", "grantItem", "removeItem", "grantXp", "grantGold", "unlockLocation", "unlockStation", "discoverRecipe", "changeRelation"]);
 
     function validate(story, gameplay) {
@@ -29,6 +29,7 @@
             if (!reachable.has(nodeId)) errors.push(`장면 '${nodeId}'은 시작 장면에서 도달할 수 없습니다.`);
             validateRules(node.conditions || [], CONDITION_TYPES, `${nodeId}.conditions`, errors, gameplay);
             if (node.conditionsMode !== undefined && !["all", "any"].includes(node.conditionsMode)) errors.push(`장면 '${nodeId}'의 conditionsMode는 all 또는 any여야 합니다.`);
+            if ((node.conditions || []).some((condition) => condition.type === "choiceSelected" && !String(condition.choiceEvent || "").includes("::"))) errors.push(`장면 '${nodeId}'의 이전 선택 조건은 장면과 선택지를 지정해야 합니다.`);
             if (node.trigger !== undefined) {
                 if (!node.trigger || node.trigger.type !== "enterLocation") errors.push(`장면 '${nodeId}'의 자동 실행 설정이 올바르지 않습니다.`);
                 else if (!node.trigger.location || (gameplay && !gameplay.locations?.[node.trigger.location])) errors.push(`장면 '${nodeId}'의 자동 실행 지역 '${node.trigger.location || ""}'을(를) 찾을 수 없습니다.`);
@@ -49,6 +50,7 @@
                 if (choice.next && !story.nodes[choice.next]) errors.push(`선택지 '${nodeId}.${choice.id}'의 다음 장면 '${choice.next}'이(가) 없습니다.`);
                 validateRules(choice.conditions, CONDITION_TYPES, `${nodeId}.${choice.id}.conditions`, errors, gameplay);
                 if (choice.conditionsMode !== undefined && !["all", "any"].includes(choice.conditionsMode)) errors.push(`선택지 '${nodeId}.${choice.id}'의 conditionsMode는 all 또는 any여야 합니다.`);
+                if ((choice.conditions || []).some((condition) => condition.type === "choiceSelected" && !String(condition.choiceEvent || "").includes("::"))) errors.push(`선택지 '${nodeId}.${choice.id}'의 이전 선택 조건은 장면과 선택지를 지정해야 합니다.`);
                 validateRules(choice.effects, EFFECT_TYPES, `${nodeId}.${choice.id}.effects`, errors, gameplay);
             }
         }
@@ -63,7 +65,7 @@
             startQuest: ["questId"], advanceQuest: ["questId", "step"], completeQuest: ["questId"],
             grantItem: ["itemId", "quantity"], removeItem: ["itemId", "quantity"], grantXp: ["amount"],
             grantGold: ["amount"], unlockLocation: ["location"], unlockStation: ["stationId"], discoverRecipe: ["recipeId"],
-            stationUnlocked: ["stationId"], recipeKnown: ["recipeId"], changeRelation: ["npcId", "amount"]
+            stationUnlocked: ["stationId"], recipeKnown: ["recipeId"], choiceSelected: ["choiceEvent"], changeRelation: ["npcId", "amount"]
         };
         for (const rule of rules) {
             if (!rule || !allowed.has(rule.type)) {
@@ -103,6 +105,13 @@
             case "locationIs": return state.location === condition.location;
             case "stationUnlocked": return state.unlockedStations?.[condition.stationId] === true;
             case "recipeKnown": return state.discoveredRecipes?.[condition.recipeId] === true;
+            case "choiceSelected": {
+                const separator = String(condition.choiceEvent || "").indexOf("::");
+                if (separator < 1) return false;
+                const nodeId = condition.choiceEvent.slice(0, separator);
+                const choiceId = condition.choiceEvent.slice(separator + 2);
+                return (state.story.history || []).some((entry) => entry.nodeId === nodeId && entry.choiceId === choiceId);
+            }
             default: throw new Error(`지원하지 않는 조건: ${condition.type}`);
         }
     }
