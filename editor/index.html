@@ -7,7 +7,7 @@
     <script src="../supabase-config.js?v=2"></script>
     <script src="editor-auth.js?v=2"></script>
     <title>ARCANA 스토리 편집기</title>
-    <link rel="stylesheet" href="editor.css?v=16">
+    <link rel="stylesheet" href="editor.css?v=17">
 </head>
 <body>
     <header class="topbar">
@@ -79,13 +79,35 @@
                 <label>장면 ID <input id="nodeId" type="text" readonly></label>
                 <label>제목 <input id="nodeTitle" type="text" maxlength="100"></label>
                 <label>본문 <textarea id="nodeText" rows="5"></textarea></label>
+                <section class="rule-section trigger-settings">
+                    <div class="rule-section-heading">
+                        <h3>실행 시점</h3>
+                        <p>이 장면을 언제 시작할지 설정합니다. 자동 실행은 지역에 진입할 때 발생합니다.</p>
+                    </div>
+                    <label>실행 방식
+                        <select id="nodeTriggerType">
+                            <option value="manual">직접 실행 / 이전 선택으로 진입</option>
+                            <option value="enterLocation">특정 지역에 진입하면 자동 실행</option>
+                        </select>
+                    </label>
+                    <div id="nodeLocationTriggerFields" class="trigger-fields" hidden>
+                        <label>실행 지역 <select id="nodeTriggerLocation"></select></label>
+                        <label class="inline-setting"><input id="nodeTriggerOnce" type="checkbox"> 최초 1회만 실행</label>
+                    </div>
+                </section>
                 <section class="rule-section">
                     <div class="rule-section-heading">
-                        <h3>장면 표시 조건</h3>
-                        <p>모든 조건을 만족해야 장면을 열 수 있습니다. 조건이 맞지 않으면 진행할 수 없으므로, 선택지를 감추려면 선택지의 표시 조건을 사용하세요.</p>
+                        <h3>장면 진입 조건</h3>
+                        <p>아래 조건을 여러 개 추가할 수 있습니다. 조건이 없으면 항상 진입할 수 있습니다.</p>
                     </div>
+                    <label>조건 판정 방식
+                        <select id="nodeConditionsMode">
+                            <option value="all">모두 충족 (AND)</option>
+                            <option value="any">하나 이상 충족 (OR)</option>
+                        </select>
+                    </label>
                     <div id="nodeConditionsEditor" class="rule-editor"></div>
-                    <button id="addNodeConditionButton" type="button">+ 장면 조건</button>
+                    <button id="addNodeConditionButton" type="button">+ 조건 추가</button>
                 </section>
                 <div class="choice-heading">
                     <div><h3>선택지</h3><p>선택지를 고르면 효과가 적용되고 다음 장면으로 이동합니다.</p></div>
