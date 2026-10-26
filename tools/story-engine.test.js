@@ -65,6 +65,17 @@ test("조건 그룹은 AND와 OR 판정을 지원한다", () => {
     ], state, "any"), true);
 });
 
+test("이전 장면의 특정 선택 기록을 조건으로 판정한다", () => {
+    const state = makeState();
+    ArcanaStoryEngine.choose(story, state, "read_record");
+    assert.equal(ArcanaStoryEngine.conditionsMet([
+        { type: "choiceSelected", choiceEvent: "village_notice::read_record" }
+    ], state), true);
+    assert.equal(ArcanaStoryEngine.conditionsMet([
+        { type: "choiceSelected", choiceEvent: "village_notice::leave_record" }
+    ], state), false);
+});
+
 test("지역 진입 트리거는 조건을 만족하면 장면을 열고 최초 1회만 실행한다", () => {
     const triggeredStory = structuredClone(story);
     triggeredStory.nodes.village_notice.trigger = { type: "enterLocation", location: "village", once: true };
