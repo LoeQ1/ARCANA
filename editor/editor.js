@@ -47,7 +47,8 @@ const RULE_SCHEMAS = {
         questStatus: { label: "퀘스트 상태", help: "퀘스트가 진행 중인지 또는 완료됐는지 확인합니다.", fields: [["questId", "퀘스트", "quests"], ["status", "상태", "status"]] },
         locationIs: { label: "현재 지역", help: "플레이어가 지정한 지역에 있는지 확인합니다.", fields: [["location", "지역", "locations"]] },
         stationUnlocked: { label: "장치 해금 여부", help: "변환 장치가 해금됐는지 확인합니다.", fields: [["stationId", "장치", "stations"]] },
-        recipeKnown: { label: "레시피 발견 여부", help: "레시피를 발견했는지 확인합니다.", fields: [["recipeId", "레시피", "recipes"]] }
+        recipeKnown: { label: "레시피 발견 여부", help: "레시피를 발견했는지 확인합니다.", fields: [["recipeId", "레시피", "recipes"]] },
+        choiceSelected: { label: "이전 선택 여부", help: "지정한 장면에서 특정 선택지를 선택한 기록이 있는지 확인합니다.", fields: [["choiceEvent", "이전 선택", "storyChoices"]] }
     },
     effects: {
         setFlag: { label: "진행 플래그 기록", help: "이름과 값으로 이야기 진행 상태를 기록합니다. 이후 같은 플래그 조건에서 확인할 수 있습니다.", fields: [["key", "플래그 이름", "text"], ["value", "저장할 값", "value"]] },
@@ -438,7 +439,10 @@ function getRuleOptions(source) {
         quests: gameplay.quests,
         locations: gameplay.locations,
         stations: gameplay.stations,
-        recipes: gameplay.recipes
+        recipes: gameplay.recipes,
+        storyChoices: Object.fromEntries(Object.entries(story?.nodes || {}).flatMap(([nodeId, node]) =>
+            (node.choices || []).map((choice) => [`${nodeId}::${choice.id}`, `${node.title || nodeId} → ${choice.text || choice.id}`])
+        ))
     };
     return Object.entries(collections[source] || {}).map(([id, value]) => [id, value.name || id]);
 }
@@ -489,7 +493,7 @@ function createRuleField(fieldName, labelText, controlType, rule, fallback) {
     }
 
     let field;
-    if (["items", "quests", "locations", "stations", "recipes"].includes(controlType)) {
+    if (["items", "quests", "locations", "stations", "recipes", "storyChoices"].includes(controlType)) {
         field = document.createElement("select");
         appendRuleOptions(field, getRuleOptions(controlType), rule[fieldName]);
     } else if (controlType === "status") {
