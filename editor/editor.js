@@ -444,7 +444,7 @@ function getRuleOptions(source) {
             (node.choices || []).map((choice) => [`${nodeId}::${choice.id}`, `${node.title || nodeId} → ${choice.text || choice.id}`])
         ))
     };
-    return Object.entries(collections[source] || {}).map(([id, value]) => [id, value.name || id]);
+    return Object.entries(collections[source] || {}).map(([id, value]) => [id, typeof value === "string" ? value : (value.name || id)]);
 }
 
 function appendRuleOptions(select, options, selected) {
