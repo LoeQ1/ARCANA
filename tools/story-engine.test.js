@@ -52,6 +52,30 @@ test("스토리 선택으로 차원균열을 해금하고 열쇠 소모 없이 �
     assert.equal(state.inventory.rift_shard, undefined);
 });
 
+test("조건 그룹은 AND와 OR 판정을 지원한다", () => {
+    const state = makeState();
+    state.flags.has_clue = true;
+    assert.equal(ArcanaStoryEngine.conditionsMet([
+        { type: "flagEquals", key: "has_clue", value: true },
+        { type: "levelAtLeast", value: 10 }
+    ], state, "all"), false);
+    assert.equal(ArcanaStoryEngine.conditionsMet([
+        { type: "flagEquals", key: "has_clue", value: true },
+        { type: "levelAtLeast", value: 10 }
+    ], state, "any"), true);
+});
+
+test("지역 진입 트리거는 조건을 만족하면 장면을 열고 최초 1회만 실행한다", () => {
+    const triggeredStory = structuredClone(story);
+    triggeredStory.nodes.village_notice.trigger = { type: "enterLocation", location: "village", once: true };
+    const state = makeState();
+    state.story.currentNode = "record_read";
+    assert.equal(ArcanaStoryEngine.onLocationEntered(triggeredStory, state, "village").id, "village_notice");
+    assert.equal(state.story.currentNode, "village_notice");
+    assert.equal(ArcanaStoryEngine.onLocationEntered(triggeredStory, state, "village"), null);
+    assert.equal(ArcanaStoryEngine.validate(triggeredStory, gameplay).length, 0);
+});
+
 test("유효하지 않은 선택을 거부한다", () => {
     assert.throws(() => ArcanaStoryEngine.choose(story, makeState(), "missing_choice"), /선택할 수 없는/);
 });
