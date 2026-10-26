@@ -20,6 +20,9 @@
             for (const choice of choices) if (choice && choice.next) visit(choice.next);
         };
         visit(story.startNode);
+        for (const [nodeId, node] of Object.entries(story.nodes)) {
+            if (node?.trigger?.type === "enterLocation") visit(nodeId);
+        }
 
         for (const [nodeId, node] of Object.entries(story.nodes)) {
             if (!node || typeof node.title !== "string" || typeof node.text !== "string" || !Array.isArray(node.choices)) {
