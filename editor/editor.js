@@ -718,11 +718,25 @@ function createChoiceCard(choice, index) {
     nextLabel.append(next);
     card.append(nextLabel);
     const conditions = createRuleSection(
-        choice, "conditions", "표시 조건",
-        "조건을 모두 만족할 때만 이 선택지가 플레이어에게 보입니다. 조건이 없으면 항상 표시됩니다.",
-        "+ 표시 조건",
+        choice, "conditions", "선택지 표시 조건",
+        "조건이 없으면 항상 표시됩니다. 여러 조건을 함께 설정하고 판정 방식을 선택할 수 있습니다.",
+        "+ 조건 추가",
         () => addRule(card.querySelector('[data-rule-kind="conditions"]'), choice, "conditions")
     );
+    const modeLabel = document.createElement("label");
+    modeLabel.className = "condition-mode-label";
+    modeLabel.textContent = "조건 판정 방식";
+    const modeSelect = document.createElement("select");
+    modeSelect.dataset.choiceConditionMode = "";
+    for (const [value, label] of [["all", "모두 충족 (AND)"], ["any", "하나 이상 충족 (OR)"]]) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        modeSelect.append(option);
+    }
+    modeSelect.value = choice.conditionsMode === "any" ? "any" : "all";
+    modeLabel.append(modeSelect);
+    conditions.insertBefore(modeLabel, conditions.querySelector(".rule-editor"));
     const effects = createRuleSection(
         choice, "effects", "선택 효과",
         "선택했을 때 적용할 변화입니다. 아이템·퀘스트 보상은 같은 선택에서 중복 적용되지 않습니다.",
@@ -760,6 +774,19 @@ function renderInspector() {
     $("#nodeId").value = activeNodeId;
     $("#nodeTitle").value = node.title || "";
     $("#nodeText").value = node.text || "";
+    $("#nodeTriggerType").value = node.trigger?.type === "enterLocation" ? "enterLocation" : "manual";
+    const triggerLocation = $("#nodeTriggerLocation");
+    triggerLocation.replaceChildren();
+    for (const [id, location] of Object.entries(gameplay.locations || {})) {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = `${location.name || id} · ${id}`;
+        triggerLocation.append(option);
+    }
+    triggerLocation.value = node.trigger?.location || Object.keys(gameplay.locations || {})[0] || "";
+    $("#nodeTriggerOnce").checked = node.trigger?.once !== false;
+    $("#nodeLocationTriggerFields").hidden = $("#nodeTriggerType").value !== "enterLocation";
+    $("#nodeConditionsMode").value = node.conditionsMode === "any" ? "any" : "all";
     renderRuleEditor(nodeConditionsEditor, node.conditions || [], "conditions");
     $("#editMessage").textContent = "";
     choicesEditor.replaceChildren();
@@ -1913,6 +1940,17 @@ function applyInspectorChanges(mark = true) {
     const messages = [];
     node.title = $("#nodeTitle").value;
     node.text = $("#nodeText").value;
+    if ($("#nodeTriggerType").value === "enterLocation") {
+        node.trigger = {
+            type: "enterLocation",
+            location: $("#nodeTriggerLocation").value,
+            once: $("#nodeTriggerOnce").checked
+        };
+    } else {
+        delete node.trigger;
+    }
+    $("#nodeLocationTriggerFields").hidden = $("#nodeTriggerType").value !== "enterLocation";
+    node.conditionsMode = $("#nodeConditionsMode").value === "any" ? "any" : "all";
     try {
         node.conditions = readRuleEditor(nodeConditionsEditor);
     } catch (error) {
@@ -1927,6 +1965,7 @@ function applyInspectorChanges(mark = true) {
             if (name === "id" || name === "text") choice[name] = field.value;
             if (name === "next") choice.next = field.value || null;
         }
+        choice.conditionsMode = card.querySelector("[data-choice-condition-mode]")?.value === "any" ? "any" : "all";
         for (const rules of card.querySelectorAll("[data-rule-kind]")) {
             const kind = rules.dataset.ruleKind;
             try {
@@ -1968,7 +2007,7 @@ function addNode() {
     let number = Object.keys(story.nodes).length + 1;
     let id = `scene_${number}`;
     while (story.nodes[id]) id = `scene_${++number}`;
-    story.nodes[id] = { title: "새 장면", text: "", conditions: [], choices: [] };
+    story.nodes[id] = { title: "새 장면", text: "", conditions: [], conditionsMode: "all", choices: [] };
     activeNodeId = id;
     markDirty();
     renderGraph();
@@ -2058,6 +2097,10 @@ inspector.addEventListener("change", (event) => {
     applyInspectorChanges();
 });
 $("#addNodeButton").addEventListener("click", addNode);
+$("#nodeTriggerType").addEventListener("change", () => {
+    $("#nodeLocationTriggerFields").hidden = $("#nodeTriggerType").value !== "enterLocation";
+    applyInspectorChanges();
+});
 $("#addNodeConditionButton").addEventListener("click", () => addRule(nodeConditionsEditor, story.nodes[activeNodeId], "conditions"));
 $("#addChoiceButton").addEventListener("click", addChoice);
 $("#deleteNodeButton").addEventListener("click", deleteNode);
