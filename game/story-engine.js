@@ -28,6 +28,12 @@
             }
             if (!reachable.has(nodeId)) errors.push(`장면 '${nodeId}'은 시작 장면에서 도달할 수 없습니다.`);
             validateRules(node.conditions || [], CONDITION_TYPES, `${nodeId}.conditions`, errors, gameplay);
+            if (node.conditionsMode !== undefined && !["all", "any"].includes(node.conditionsMode)) errors.push(`장면 '${nodeId}'의 conditionsMode는 all 또는 any여야 합니다.`);
+            if (node.trigger !== undefined) {
+                if (!node.trigger || node.trigger.type !== "enterLocation") errors.push(`장면 '${nodeId}'의 자동 실행 설정이 올바르지 않습니다.`);
+                else if (!node.trigger.location || (gameplay && !gameplay.locations?.[node.trigger.location])) errors.push(`장면 '${nodeId}'의 자동 실행 지역 '${node.trigger.location || ""}'을(를) 찾을 수 없습니다.`);
+                else if (node.trigger.once !== undefined && typeof node.trigger.once !== "boolean") errors.push(`장면 '${nodeId}'의 최초 1회 실행 설정은 참/거짓이어야 합니다.`);
+            }
             const choiceIds = new Set();
             for (const choice of node.choices) {
                 if (!choice || typeof choice !== "object") {
@@ -42,6 +48,7 @@
                 }
                 if (choice.next && !story.nodes[choice.next]) errors.push(`선택지 '${nodeId}.${choice.id}'의 다음 장면 '${choice.next}'이(가) 없습니다.`);
                 validateRules(choice.conditions, CONDITION_TYPES, `${nodeId}.${choice.id}.conditions`, errors, gameplay);
+                if (choice.conditionsMode !== undefined && !["all", "any"].includes(choice.conditionsMode)) errors.push(`선택지 '${nodeId}.${choice.id}'의 conditionsMode는 all 또는 any여야 합니다.`);
                 validateRules(choice.effects, EFFECT_TYPES, `${nodeId}.${choice.id}.effects`, errors, gameplay);
             }
         }
@@ -100,15 +107,33 @@
         }
     }
 
-    function conditionsMet(conditions, state) {
-        return conditions.every((condition) => testCondition(condition, state));
+    function conditionsMet(conditions, state, mode = "all") {
+        if (!Array.isArray(conditions) || conditions.length === 0) return true;
+        return mode === "any"
+            ? conditions.some((condition) => testCondition(condition, state))
+            : conditions.every((condition) => testCondition(condition, state));
+    }
+
+    function onLocationEntered(story, state, locationId) {
+        state.story.triggeredNodes ||= [];
+        for (const [nodeId, node] of Object.entries(story.nodes || {})) {
+            const trigger = node.trigger;
+            if (!trigger || trigger.type !== "enterLocation" || trigger.location !== locationId) continue;
+            if (trigger.once !== false && state.story.triggeredNodes.includes(nodeId)) continue;
+            if (!conditionsMet(node.conditions || [], state, node.conditionsMode || "all")) continue;
+            state.story.currentNode = nodeId;
+            state.story.contentVersion = story.version;
+            if (trigger.once !== false) state.story.triggeredNodes.push(nodeId);
+            return node;
+        }
+        return null;
     }
 
     function getCurrentNode(story, state) {
         const id = state.story.currentNode || story.startNode;
         const node = story.nodes[id];
         if (!node) throw new Error(`현재 장면 '${id}'을(를) 찾을 수 없습니다.`);
-        if (!conditionsMet(node.conditions || [], state)) throw new Error(`현재 장면 '${id}'의 표시 조건을 만족하지 않습니다.`);
+        if (!conditionsMet(node.conditions || [], state, node.conditionsMode || "all")) throw new Error(`현재 장면 '${id}'의 진입 조건을 만족하지 않습니다.`);
         return node;
     }
 
@@ -116,7 +141,7 @@
         const node = getCurrentNode(story, state);
         const choice = node.choices.find((candidate) => candidate.id === choiceId);
         if (!choice) throw new Error("현재 장면에서 선택할 수 없는 항목입니다.");
-        if (!conditionsMet(choice.conditions, state)) throw new Error(choice.unavailableMessage || "아직 선택할 수 없습니다.");
+        if (!conditionsMet(choice.conditions, state, choice.conditionsMode || "all")) throw new Error(choice.unavailableMessage || "아직 선택할 수 없습니다.");
         const eventId = `${story.storyId}:${node.id || state.story.currentNode}:${choice.id}`;
         if (!state.story.appliedChoices.includes(eventId)) {
             for (const effect of choice.effects) applyEffect(effect, state);
@@ -155,5 +180,5 @@
         }
     }
 
-    global.ArcanaStoryEngine = { validate, conditionsMet, getCurrentNode, choose };
+    global.ArcanaStoryEngine = { validate, conditionsMet, getCurrentNode, choose, onLocationEntered };
 })(window);
